@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from app.api.chat import router as chat_router
 from app.location.router import router as location_router
+from app.api.spatial import router as spatial_router
 
 # Load environment variables from .env if present
 load_dotenv()
@@ -35,6 +36,7 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(location_router)
+app.include_router(spatial_router)
 
 @app.get("/")
 def root():

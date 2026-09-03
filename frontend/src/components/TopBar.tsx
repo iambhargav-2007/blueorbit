@@ -1,11 +1,13 @@
 import React from 'react';
-import { Orbit, Activity, Menu, RefreshCw } from 'lucide-react';
+import { Orbit, Activity, Menu, RefreshCw, Compass, MessageSquare } from 'lucide-react';
 
 interface TopBarProps {
   isBackendHealthy: boolean;
   onRefreshHealth: () => void;
   onToggleSidebar: () => void;
   isCheckingHealth: boolean;
+  activeView: 'map' | 'chat';
+  onChangeView: (view: 'map' | 'chat') => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -13,6 +15,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onRefreshHealth,
   onToggleSidebar,
   isCheckingHealth,
+  activeView,
+  onChangeView,
 }) => {
   return (
     <header className="top-bar">
@@ -26,7 +30,7 @@ export const TopBar: React.FC<TopBarProps> = ({
           <Menu size={18} />
         </button>
 
-        <div className="brand-wrapper">
+        <div className="brand-wrapper" onClick={() => onChangeView('map')} style={{ cursor: 'pointer' }}>
           <div className="brand-icon">
             <Orbit size={18} />
           </div>
@@ -35,6 +39,24 @@ export const TopBar: React.FC<TopBarProps> = ({
             <span className="brand-badge">ORCA</span>
           </div>
         </div>
+      </div>
+
+      {/* Center View Mode Switcher */}
+      <div className="view-mode-tabs">
+        <button
+          className={`view-mode-tab ${activeView === 'map' ? 'active' : ''}`}
+          onClick={() => onChangeView('map')}
+        >
+          <Compass size={14} />
+          <span>Spatial Map</span>
+        </button>
+        <button
+          className={`view-mode-tab ${activeView === 'chat' ? 'active' : ''}`}
+          onClick={() => onChangeView('chat')}
+        >
+          <MessageSquare size={14} />
+          <span>Decision Assistant</span>
+        </button>
       </div>
 
       <div className="top-bar-right">

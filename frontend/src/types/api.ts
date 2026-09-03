@@ -171,6 +171,47 @@ export interface ClarificationRequired {
   message: string;
 }
 
+export interface PointAnalysisLocation {
+  latitude: number;
+  longitude: number;
+  display_name: string;
+  is_inside_eez: boolean;
+  distance_to_boundary_km?: number | null;
+  zone_name?: string | null;
+}
+
+export interface PointAnalysisResponse {
+  success: boolean;
+  location: PointAnalysisLocation;
+  geofence: Record<string, any>;
+  marine?: Record<string, any> | null;
+  weather?: Record<string, any> | null;
+  decision?: FishingDecision | null;
+  temporal_mode: string;
+  timestamp: string;
+  error?: string | null;
+}
+
+export interface GridCell {
+  lat: number;
+  lon: number;
+  val: number;
+  label: string;
+  category: string;
+}
+
+export interface GridLayerResponse {
+  success: boolean;
+  layer: string;
+  unit: string;
+  date: string;
+  temporal_mode: string;
+  source: string;
+  min_val: number;
+  max_val: number;
+  cells: GridCell[];
+}
+
 export type ApiResponse = CoordinatorResponse | ClarificationRequired;
 
 export interface ChatRequest {

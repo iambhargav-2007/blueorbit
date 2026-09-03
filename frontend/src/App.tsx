@@ -9,18 +9,28 @@ import { DateControl } from './components/DateControl';
 import { checkBackendHealth, sendChatMessage, ApiError } from './services/chatApi';
 import { ChatMessage, SessionRecord, CoordinatorResponse, ClarificationRequired, LocationContext } from './types/api';
 import { Loader2 } from 'lucide-react';
+import { MarineSpatialView } from './components/spatial/MarineSpatialView';
 
 const createSessionId = () => `orca-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export const App: React.FC = () => {
+  // Navigation View State: 'map' (Spatial Intelligence Centerpiece) | 'chat' (Decision Assistant)
+  const [activeView, setActiveView] = useState<'map' | 'chat'>('map');
+
   // Session & Conversations
   const [currentSessionId, setCurrentSessionId] = useState<string>(createSessionId);
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // Context: Location & Date
-  const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [locationContext, setLocationContext] = useState<LocationContext | null>(null);
+  // Context: Location & Date (default center to Goa Coastal Zone)
+  const [location, setLocation] = useState<{ lat: number; lon: number } | null>({ lat: 15.41, lon: 73.80 });
+  const [locationContext, setLocationContext] = useState<LocationContext | null>({
+    latitude: 15.41,
+    longitude: 73.80,
+    display_name: 'Goa Coastal Zone',
+    source: 'map',
+    timestamp: new Date().toISOString(),
+  });
   const [dateStr, setDateStr] = useState<string | null>('today');
 
   // Modals & UI States
@@ -150,6 +160,7 @@ export const App: React.FC = () => {
               longitude: reqLon,
               display_name: `${reqLat.toFixed(2)}° N · ${reqLon.toFixed(2)}° E`,
               source: 'manual',
+              timestamp: new Date().toISOString(),
             });
           }
         }
@@ -186,6 +197,20 @@ export const App: React.FC = () => {
     handleSendMessage(prompt, defaultLoc || location || undefined);
   };
 
+  // Switch to Chat from Spatial Map
+  const handleSwitchToChatWithLocation = (locName: string, lat: number, lon: number) => {
+    setLocation({ lat, lon });
+    setLocationContext({
+      latitude: lat,
+      longitude: lon,
+      display_name: locName,
+      source: 'map',
+      timestamp: new Date().toISOString(),
+    });
+    setActiveView('chat');
+    handleSendMessage(`Can I go fishing near ${locName} today?`, { lat, lon });
+  };
+
   return (
     <div className="app-shell">
       {/* Sidebar for session management */}
@@ -206,50 +231,68 @@ export const App: React.FC = () => {
           onRefreshHealth={verifyHealth}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           isCheckingHealth={isCheckingHealth}
+          activeView={activeView}
+          onChangeView={setActiveView}
         />
 
-        {/* Chat Workspace */}
-        <main className="chat-workspace">
-          <div className="messages-scroll-area">
-            {messages.length === 0 ? (
-              <WelcomeState onSelectPrompt={handleSelectStarter} />
-            ) : (
-              <div className="messages-wrapper">
-                {messages.map((msg) => (
-                  <MessageBubble key={msg.id} message={msg} />
-                ))}
+        {/* View 1: Spatial Marine Intelligence (Centerpiece Map View) */}
+        {activeView === 'map' && (
+          <MarineSpatialView
+            currentLocationContext={locationContext}
+            onUpdateLocationContext={(loc) => {
+              setLocationContext(loc);
+              setLocation({ lat: loc.latitude, lon: loc.longitude });
+            }}
+            observationDate={dateStr}
+            onOpenDateModal={() => setIsDateOpen(true)}
+            onSwitchToChatWithLocation={handleSwitchToChatWithLocation}
+          />
+        )}
 
-                {isLoading && (
-                  <div className="message-row assistant animate-fade-in">
-                    <div className="message-avatar orca-avatar">
-                      <Loader2 size={16} className="animate-spin" />
-                    </div>
-                    <div className="message-bubble assistant-bubble">
-                      <div className="loading-indicator">
+        {/* View 2: Conversational Decision Assistant */}
+        {activeView === 'chat' && (
+          <main className="chat-workspace">
+            <div className="messages-scroll-area">
+              {messages.length === 0 ? (
+                <WelcomeState onSelectPrompt={handleSelectStarter} />
+              ) : (
+                <div className="messages-wrapper">
+                  {messages.map((msg) => (
+                    <MessageBubble key={msg.id} message={msg} />
+                  ))}
+
+                  {isLoading && (
+                    <div className="message-row assistant animate-fade-in">
+                      <div className="message-avatar orca-avatar">
                         <Loader2 size={16} className="animate-spin" />
-                        <span>Analyzing marine conditions & spatial intelligence...</span>
+                      </div>
+                      <div className="message-bubble assistant-bubble">
+                        <div className="loading-indicator">
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Analyzing marine conditions & spatial intelligence...</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+              )}
+            </div>
 
-          {/* Bottom Docked Message Composer */}
-          <MessageComposer
-            input={input}
-            onChangeInput={setInput}
-            onSend={() => handleSendMessage()}
-            isLoading={isLoading}
-            location={location}
-            locationContext={locationContext}
-            dateStr={dateStr}
-            onOpenLocation={() => setIsLocationOpen(true)}
-            onOpenDate={() => setIsDateOpen(true)}
-          />
-        </main>
+            {/* Bottom Docked Message Composer */}
+            <MessageComposer
+              input={input}
+              onChangeInput={setInput}
+              onSend={() => handleSendMessage()}
+              isLoading={isLoading}
+              location={location}
+              locationContext={locationContext}
+              dateStr={dateStr}
+              onOpenLocation={() => setIsLocationOpen(true)}
+              onOpenDate={() => setIsDateOpen(true)}
+            />
+          </main>
+        )}
       </div>
 
       {/* Location Selector Popover */}
