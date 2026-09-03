@@ -1,0 +1,11 @@
+{
+  "warning_distance_km": 15.0,
+  "metric_crs": "EPSG:32643",
+  "statuses": {
+    "safe": "SAFE",
+    "warning": "WARNING",
+    "outside_eez": "OUTSIDE_EEZ",
+    "restricted": "RESTRICTED",
+    "insufficient_data": "INSUFFICIENT_DATA"
+  }
+}

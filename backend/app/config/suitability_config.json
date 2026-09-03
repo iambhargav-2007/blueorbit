@@ -1,0 +1,23 @@
+{
+  "temperature": {
+    "optimal_min": 27.5,
+    "optimal_max": 29.5,
+    "absolute_min": 25.0,
+    "absolute_max": 31.0
+  },
+  "chlorophyll": {
+    "optimal_min": 0.2,
+    "optimal_max": 1.5,
+    "absolute_min": 0.05,
+    "absolute_max": 5.0
+  },
+  "weights": {
+    "temperature": 0.6,
+    "chlorophyll": 0.4
+  },
+  "categories": [
+    {"max_score": 39.99, "label": "Low"},
+    {"max_score": 69.99, "label": "Moderate"},
+    {"max_score": 100.0, "label": "High"}
+  ]
+}

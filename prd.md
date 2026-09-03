@@ -1,4 +1,3 @@
-[product-requirements-document.md](https://github.com/user-attachments/files/31639240/product-requirements-document.md)
 # Product Requirement Document (PRD)
 ## Project: Blue Orbit (ORCA - Marine EcOsystem Reasoning with Collaborative Agents)
 ### Document Version: 1.0.0
