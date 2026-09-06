@@ -97,7 +97,7 @@ export async function sendChatMessage(request: ChatRequest): Promise<ApiResponse
       throw new ApiError('Request timed out while waiting for marine intelligence backend.');
     }
     if (err.message && err.message.includes('Failed to fetch')) {
-      throw new ApiError('Unable to connect to Blue Orbit backend. Please ensure the backend is running at http://localhost:8000.');
+      throw new ApiError(`Unable to connect to Blue Orbit backend. Please ensure the backend is running at ${API_BASE}.`);
     }
     throw new ApiError(err.message || 'An unexpected error occurred while communicating with the backend.');
   }
