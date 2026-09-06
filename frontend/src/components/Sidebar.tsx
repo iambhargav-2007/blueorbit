@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, Compass, Shield, X } from 'lucide-react';
+import { Plus, MessageSquare, Compass, Anchor, X } from 'lucide-react';
 import { SessionRecord } from '../types/api';
 
 interface SidebarProps {
@@ -23,79 +23,80 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   return (
     <>
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`} aria-label="Navigation sidebar">
+        {/* Header */}
         <div className="sidebar-header">
-          <button className="btn-new-chat" onClick={onNewChat}>
-            <Plus size={16} />
+          <button id="btn-new-chat" className="btn-new-chat" onClick={onNewChat}>
+            <Plus size={14} />
             <span>New Chat</span>
           </button>
         </div>
 
         <div className="sidebar-content">
-          <div className="sidebar-section-title">Recent Conversations</div>
-
-          {sessions.length === 0 ? (
-            <div style={{ padding: '12px 10px', fontSize: '12px', color: 'var(--text-muted)' }}>
-              No previous chats in this session.
-            </div>
-          ) : (
-            sessions.map((sess) => (
-              <button
-                key={sess.id}
-                className={`session-item ${sess.id === currentSessionId ? 'active' : ''}`}
-                onClick={() => {
-                  onSelectSession(sess.id);
-                  onClose();
-                }}
-              >
-                <MessageSquare size={14} style={{ flexShrink: 0 }} />
-                <span className="session-title-text">{sess.title || 'Marine Analysis'}</span>
-              </button>
-            ))
+          {/* Recent conversations */}
+          {sessions.length > 0 && (
+            <>
+              <div className="sidebar-section-title">Recent</div>
+              {sessions.map((sess) => (
+                <button
+                  key={sess.id}
+                  className={`session-item ${sess.id === currentSessionId ? 'active' : ''}`}
+                  onClick={() => { onSelectSession(sess.id); onClose(); }}
+                  aria-current={sess.id === currentSessionId ? 'page' : undefined}
+                >
+                  <MessageSquare size={12} style={{ flexShrink: 0, opacity: 0.6 }} />
+                  <span className="session-title-text">{sess.title || 'Marine Analysis'}</span>
+                </button>
+              ))}
+            </>
           )}
 
+          {sessions.length === 0 && (
+            <div style={{ padding: '20px 8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.5 }}>
+                No recent sessions.<br />Start a conversation.
+              </div>
+            </div>
+          )}
+
+          {/* Active sector */}
           {activeLocation && (
             <>
-              <div className="sidebar-section-title" style={{ marginTop: '20px' }}>
-                Active Sector
-              </div>
-              <div
-                style={{
-                  padding: '10px 12px',
-                  background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-mono)',
-                  color: 'var(--cyan-light)',
-                }}
-              >
-                <Compass size={14} />
-                <span>
-                  {activeLocation.lat.toFixed(2)}°N, {activeLocation.lon.toFixed(2)}°E
-                </span>
+              <div className="sidebar-section-title" style={{ marginTop: 20 }}>Active Sector</div>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 10px',
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--r-md)',
+                fontSize: 11.5,
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-primary)',
+              }}>
+                <Compass size={12} color="var(--accent)" />
+                <span>{activeLocation.lat.toFixed(2)}°N · {activeLocation.lon.toFixed(2)}°E</span>
               </div>
             </>
           )}
         </div>
 
+        {/* Footer */}
         <div className="sidebar-footer">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-            <Shield size={13} color="var(--cyan-primary)" />
-            <span>ORCA Decision Engine</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 2 }}>
+            <Anchor size={12} color="var(--text-muted)" />
+            <span>ORCA Engine</span>
           </div>
-          <div>SIH 2026 · Indian West Coast</div>
+          <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>SIH 2026 · Indian West Coast</div>
         </div>
       </aside>
 
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="popover-backdrop mobile-only"
           onClick={onClose}
-          style={{ zIndex: 25 }}
+          style={{ zIndex: 40 }}
+          aria-hidden="true"
         />
       )}
     </>

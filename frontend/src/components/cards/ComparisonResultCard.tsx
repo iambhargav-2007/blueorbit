@@ -23,10 +23,10 @@ export const ComparisonResultCard: React.FC<ComparisonResultCardProps> = ({
     <div className="result-card animate-fade-in">
       <div className="result-card-header">
         <div className="result-card-title">
-          <GitCompare size={16} color="var(--cyan-primary)" />
+          <GitCompare size={16} color="var(--accent)" />
           <span>Multi-Temporal Comparative Analysis</span>
         </div>
-        <span className="temporal-tag" style={{ background: 'rgba(6, 182, 212, 0.15)', color: 'var(--cyan-light)' }}>
+        <span className="temporal-tag">
           Step 16 Smart Dual Routing
         </span>
       </div>
@@ -37,16 +37,16 @@ export const ComparisonResultCard: React.FC<ComparisonResultCardProps> = ({
           {/* Historical Column */}
           <div className="comparison-column">
             <div className="comparison-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--amber)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 500, color: 'var(--text-secondary)' }}>
                 <Calendar size={13} />
                 <span>HISTORICAL BASELINE</span>
               </div>
-              <span className="temporal-tag historical">{hist.date}</span>
+              <span className="temporal-tag">{hist.date}</span>
             </div>
 
             <div style={{ padding: '8px 0' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Suitability Rating</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Suitability Rating</div>
+              <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--text-primary)' }}>
                 {histRes.overall_suitability_score !== null && histRes.overall_suitability_score !== undefined
                   ? `${histRes.overall_suitability_score}/100 (${histRes.fishing_potential})`
                   : histRes.fishing_potential || '—'}
@@ -59,7 +59,7 @@ export const ComparisonResultCard: React.FC<ComparisonResultCardProps> = ({
                   <Thermometer size={11} />
                   <span>SST</span>
                 </div>
-                <div className="metric-data" style={{ fontSize: '13px' }}>
+                <div className="metric-data sm">
                   {histRes.temperature_c !== null && histRes.temperature_c !== undefined
                     ? `${histRes.temperature_c.toFixed(2)} °C`
                     : '—'}
@@ -71,7 +71,7 @@ export const ComparisonResultCard: React.FC<ComparisonResultCardProps> = ({
                   <Droplet size={11} />
                   <span>Chlorophyll</span>
                 </div>
-                <div className="metric-data" style={{ fontSize: '13px' }}>
+                <div className="metric-data sm">
                   {histRes.chlorophyll_mg_m3 !== null && histRes.chlorophyll_mg_m3 !== undefined
                     ? `${histRes.chlorophyll_mg_m3.toFixed(3)} mg/m³`
                     : '—'}
@@ -83,16 +83,16 @@ export const ComparisonResultCard: React.FC<ComparisonResultCardProps> = ({
           {/* Current Column */}
           <div className="comparison-column current">
             <div className="comparison-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--cyan-light)' }}>
-                <Radio size={13} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                <Radio size={13} color="var(--accent)" />
                 <span>CURRENT CONDITIONS</span>
               </div>
-              <span className="temporal-tag live">LIVE · {curr.date}</span>
+              <span className="temporal-tag">LIVE · {curr.date}</span>
             </div>
 
             <div style={{ padding: '8px 0' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Suitability Rating</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--cyan-light)' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>Suitability Rating</div>
+              <div style={{ fontSize: '18px', fontWeight: 500, color: 'var(--text-primary)' }}>
                 {currRes.overall_suitability_score !== null && currRes.overall_suitability_score !== undefined
                   ? `${currRes.overall_suitability_score}/100 (${currRes.fishing_potential})`
                   : currRes.fishing_potential || '—'}

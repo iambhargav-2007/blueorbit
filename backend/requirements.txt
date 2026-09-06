@@ -14,3 +14,9 @@ groq>=0.12.0
 # Testing
 pytest>=7.0
 pytest-mock>=3.0
+
+# Voice/STT & TTS
+faster-whisper>=1.0.0
+python-multipart
+edge-tts>=7.0.0
+websockets==12.0

@@ -41,10 +41,10 @@ export const DateControl: React.FC<DateControlProps> = ({
 
   return (
     <div className="popover-backdrop" onClick={onClose}>
-      <div className="popover-panel animate-fade-in" onClick={(e) => e.stopPropagation()}>
+      <div className="popover-panel" onClick={(e) => e.stopPropagation()}>
         <div className="popover-header">
           <div className="popover-title">
-            <Calendar size={18} color="var(--cyan-primary)" />
+            <Calendar size={16} color="var(--accent)" />
             <span>Observation Date Context</span>
           </div>
           <button className="btn-icon" onClick={onClose} aria-label="Close">
@@ -52,16 +52,17 @@ export const DateControl: React.FC<DateControlProps> = ({
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="popover-body">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <label
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
               padding: '10px 14px',
-              background: selectedOption === 'today' ? 'var(--bg-elevated)' : 'transparent',
-              border: `1px solid ${selectedOption === 'today' ? 'var(--cyan-primary)' : 'var(--border-subtle)'}`,
-              borderRadius: 'var(--radius-md)',
+              background: selectedOption === 'today' ? 'var(--bg-raised)' : 'transparent',
+              border: `1px solid ${selectedOption === 'today' ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
+              borderRadius: 'var(--r-md)',
               cursor: 'pointer',
               fontSize: '13px',
             }}
@@ -71,9 +72,10 @@ export const DateControl: React.FC<DateControlProps> = ({
               name="date-option"
               checked={selectedOption === 'today'}
               onChange={() => setSelectedOption('today')}
+              style={{ accentColor: 'var(--accent)' }}
             />
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--cyan-light)' }}>Current Observation (Today / LIVE)</div>
+              <div style={{ fontWeight: 500, color: selectedOption === 'today' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>Current Observation (Today / LIVE)</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                 Direct live Copernicus Marine retrieval for today
               </div>
@@ -86,9 +88,9 @@ export const DateControl: React.FC<DateControlProps> = ({
               alignItems: 'center',
               gap: '10px',
               padding: '10px 14px',
-              background: selectedOption === 'historical' ? 'var(--bg-elevated)' : 'transparent',
-              border: `1px solid ${selectedOption === 'historical' ? 'var(--cyan-primary)' : 'var(--border-subtle)'}`,
-              borderRadius: 'var(--radius-md)',
+              background: selectedOption === 'historical' ? 'var(--bg-surface-elevated)' : 'transparent',
+              border: `1px solid ${selectedOption === 'historical' ? 'var(--border-strong)' : 'var(--border-default)'}`,
+              borderRadius: 'var(--r-md)',
               cursor: 'pointer',
               fontSize: '13px',
             }}
@@ -98,9 +100,10 @@ export const DateControl: React.FC<DateControlProps> = ({
               name="date-option"
               checked={selectedOption === 'historical'}
               onChange={() => setSelectedOption('historical')}
+              style={{ accentColor: 'var(--accent)' }}
             />
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--amber)' }}>October 2025 Baseline Cache</div>
+              <div style={{ fontWeight: 500, color: selectedOption === 'historical' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>October 2025 Baseline Cache</div>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                 Target date: 2025-10-15 (Standard historical baseline)
               </div>
@@ -113,9 +116,9 @@ export const DateControl: React.FC<DateControlProps> = ({
               alignItems: 'center',
               gap: '10px',
               padding: '10px 14px',
-              background: selectedOption === 'custom' ? 'var(--bg-elevated)' : 'transparent',
-              border: `1px solid ${selectedOption === 'custom' ? 'var(--cyan-primary)' : 'var(--border-subtle)'}`,
-              borderRadius: 'var(--radius-md)',
+              background: selectedOption === 'custom' ? 'var(--bg-surface-elevated)' : 'transparent',
+              border: `1px solid ${selectedOption === 'custom' ? 'var(--border-strong)' : 'var(--border-default)'}`,
+              borderRadius: 'var(--r-md)',
               cursor: 'pointer',
               fontSize: '13px',
             }}
@@ -125,13 +128,14 @@ export const DateControl: React.FC<DateControlProps> = ({
               name="date-option"
               checked={selectedOption === 'custom'}
               onChange={() => setSelectedOption('custom')}
+              style={{ accentColor: 'var(--accent)' }}
             />
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>Custom Specific Date</div>
+              <div style={{ fontWeight: 500, color: selectedOption === 'custom' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>Custom Specific Date</div>
               {selectedOption === 'custom' && (
                 <input
                   type="date"
-                  className="text-input"
+                  className="form-input"
                   style={{ marginTop: '6px', width: '100%' }}
                   value={customDate}
                   onChange={(e) => setCustomDate(e.target.value)}
@@ -153,6 +157,7 @@ export const DateControl: React.FC<DateControlProps> = ({
           <button type="button" className="btn-primary" onClick={handleApply}>
             Apply Date
           </button>
+        </div>
         </div>
       </div>
     </div>

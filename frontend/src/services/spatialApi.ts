@@ -62,3 +62,23 @@ export async function fetchGridLayer(
   }
   return res.json();
 }
+
+export async function fetchCycloneIntelligence(
+  lat: number,
+  lon: number,
+  date?: string | null
+): Promise<import('../types/api').CycloneAgentResponse> {
+  const params = new URLSearchParams({
+    lat: lat.toFixed(4),
+    lon: lon.toFixed(4),
+  });
+  if (date && date !== 'today') {
+    params.append('date', date);
+  }
+
+  const res = await fetch(`${API_BASE}/api/v1/cyclone/location?${params.toString()}`);
+  if (!res.ok) {
+    throw new Error(`Cyclone intelligence retrieval failed: ${res.statusText}`);
+  }
+  return res.json();
+}

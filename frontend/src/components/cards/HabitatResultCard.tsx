@@ -1,5 +1,5 @@
 import React from 'react';
-import { Waves, Thermometer, Droplet, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Thermometer, Droplet, Activity } from 'lucide-react';
 import { FishingAgentResponse } from '../../types/api';
 
 interface HabitatResultCardProps {
@@ -11,108 +11,99 @@ export const HabitatResultCard: React.FC<HabitatResultCardProps> = ({ data }) =>
   const score = data.habitat_score;
   const temporalMode = data.temporal_mode || (data.date === 'today' ? 'LIVE' : 'HISTORICAL');
   const summary = data.environmental_summary;
-
-  const getStatusClass = (cat: string) => {
-    switch (cat.toLowerCase()) {
-      case 'high':
-        return 'status-high';
-      case 'moderate':
-        return 'status-moderate';
-      case 'low':
-        return 'status-low';
-      default:
-        return 'status-insufficient';
-    }
-  };
-
   const isLive = temporalMode === 'LIVE';
 
+  const potLower = potential.toLowerCase();
+  const heroClass = potLower === 'high' ? 'favorable' : potLower === 'moderate' ? 'caution' : potLower === 'low' ? 'danger' : 'neutral';
+  const verdictClass = heroClass;
+
   return (
-    <div className="result-card animate-fade-in">
+    <div className="result-card animate-fade-in" id="habitat-result-card">
       <div className="result-card-header">
         <div className="result-card-title">
-          <Waves size={16} color="var(--cyan-primary)" />
-          <span>Habitat Suitability Assessment</span>
+          <Activity size={14} color="var(--accent)" />
+          <span>Environmental Suitability</span>
         </div>
-        <span className={`temporal-tag ${isLive ? 'live' : 'historical'}`}>
-          {isLive ? '● Live Marine Data' : `Historical · ${data.date || 'Cache'}`}
+        <span className={`temporal-tag ${isLive ? 'live' : 'cache'}`}>
+          {isLive ? 'Live' : `Historical · ${data.date || 'Cache'}`}
         </span>
       </div>
 
       <div className="result-card-body">
-        {/* Score Highlight */}
-        <div className="metric-highlight-panel">
+        {/* Suitability Hero with Left Border Accent */}
+        <div className={`decision-accent-hero ${heroClass}`}>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Suitability Index
+            <div className="decision-accent-label">
+              Marine Habitat Suitability
             </div>
-            <div className="metric-highlight-value">
-              {score !== null && score !== undefined ? `${score.toFixed(1)}/100` : '—'}
+            <div className={`decision-verdict ${verdictClass}`}>
+              {potential}
             </div>
           </div>
-          <div className={`metric-highlight-category ${getStatusClass(potential)}`}>
-            {potential} Potential
-          </div>
+          {score != null && (
+            <div className="decision-score-block">
+              <div className="decision-score">{score.toFixed(0)}</div>
+              <div className="decision-score-label">Suitability Score</div>
+            </div>
+          )}
         </div>
 
-        {/* Environmental Indicators */}
-        <div className="metrics-grid">
-          <div className="metric-item">
-            <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Thermometer size={12} />
-              <span>Near-Surface SST</span>
-            </div>
+        {/* Ocean indicators — single divided row */}
+        <div className="metrics-row-divided">
+          <div className="divided-metric-col">
+            <div className="metric-label"><Thermometer size={10} /> Sea Surface Temp</div>
             <div className="metric-data">
-              {summary?.temperature_c !== null && summary?.temperature_c !== undefined
-                ? `${summary.temperature_c.toFixed(2)} °C`
-                : 'Masked / Null'}
+              {summary?.temperature_c != null
+                ? `${summary.temperature_c.toFixed(1)}°C`
+                : '—'}
             </div>
+            <div className="metric-sub">{summary?.temperature_c != null ? 'Copernicus' : 'No data'}</div>
           </div>
 
-          <div className="metric-item">
-            <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Droplet size={12} />
-              <span>Chlorophyll-a</span>
-            </div>
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label"><Droplet size={10} /> Chlorophyll-a</div>
             <div className="metric-data">
-              {summary?.chlorophyll_mg_m3 !== null && summary?.chlorophyll_mg_m3 !== undefined
-                ? `${summary.chlorophyll_mg_m3.toFixed(3)} mg/m³`
-                : 'Masked / Null'}
+              {summary?.chlorophyll_mg_m3 != null
+                ? `${summary.chlorophyll_mg_m3.toFixed(3)}`
+                : '—'}
+              <span className="metric-unit"> mg/m³</span>
             </div>
+            <div className="metric-sub">Biological activity</div>
           </div>
 
-          <div className="metric-item">
-            <div className="metric-label">Data Completeness</div>
-            <div className="metric-data" style={{ fontSize: '13px' }}>
-              {data.data_quality || 'Complete'}
-            </div>
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label">Data Quality</div>
+            <div className="metric-data sm">{data.data_quality || 'Complete'}</div>
+            <div className="metric-sub">Copernicus Grid</div>
           </div>
 
-          <div className="metric-item">
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
             <div className="metric-label">Confidence</div>
-            <div className="metric-data" style={{ fontSize: '13px' }}>
-              {data.confidence || 'Moderate'}
-            </div>
+            <div className="metric-data sm">{data.confidence || 'Moderate'}</div>
+            <div className="metric-sub">Model certainty</div>
           </div>
         </div>
 
         {/* Narratives */}
-        <div className="card-narrative-section">
-          {data.scientific_explanation && (
-            <div className="narrative-item scientific">
-              <strong>Scientific Assessment:</strong> {data.scientific_explanation}
-            </div>
-          )}
-
-          {data.fisherman_advice && (
-            <div className="narrative-item advice">
-              <strong>Practical Guidance:</strong> {data.fisherman_advice}
-            </div>
-          )}
-
-          <div className="disclaimer-text">
-            {data.disclaimer || 'Prototype heuristic habitat suitability model based on environmental indicators.'}
+        {(data.scientific_explanation || data.fisherman_advice) && (
+          <div className="card-narrative-section">
+            {data.scientific_explanation && (
+              <div className="narrative-item scientific">{data.scientific_explanation}</div>
+            )}
+            {data.fisherman_advice && (
+              <div className="narrative-item advice">{data.fisherman_advice}</div>
+            )}
           </div>
+        )}
+
+        <div className="disclaimer-text">
+          {data.disclaimer || 'Environmental indicator based on available marine observations — not a direct fish-abundance prediction.'}
         </div>
       </div>
     </div>

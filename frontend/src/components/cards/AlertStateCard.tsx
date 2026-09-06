@@ -14,59 +14,39 @@ export const AlertStateCard: React.FC<AlertStateCardProps> = ({
   title,
   message,
   missingFields,
-  onQuickAction,
 }) => {
-  const getStyleClass = () => {
-    switch (type) {
-      case 'clarification':
-        return 'info';
-      case 'unsupported_future':
-        return 'warning';
-      case 'insufficient_data':
-        return 'warning';
-      case 'error':
-      default:
-        return 'error';
-    }
+  const variantMap = {
+    clarification:      { cls: 'info',    icon: <Info size={15} color="var(--accent)" /> },
+    unsupported_future: { cls: 'warning',  icon: <CalendarX size={15} color="var(--warning)" /> },
+    insufficient_data:  { cls: 'neutral',  icon: <AlertTriangle size={15} color="var(--text-muted)" /> },
+    error:              { cls: 'error',   icon: <AlertCircle size={15} color="var(--danger)" /> },
   };
 
-  const getIcon = () => {
-    switch (type) {
-      case 'clarification':
-        return <Info size={20} color="var(--cyan-light)" />;
-      case 'unsupported_future':
-        return <CalendarX size={20} color="var(--amber)" />;
-      case 'insufficient_data':
-        return <AlertTriangle size={20} color="var(--amber)" />;
-      case 'error':
-      default:
-        return <AlertCircle size={20} color="var(--rose)" />;
-    }
-  };
+  const { cls, icon } = variantMap[type] || variantMap.error;
 
   return (
-    <div className={`alert-state-card ${getStyleClass()} animate-fade-in`}>
-      <div style={{ flexShrink: 0, marginTop: '2px' }}>{getIcon()}</div>
+    <div className={`alert-card ${cls} animate-fade-in`}>
+      <div className="alert-icon" aria-hidden="true">{icon}</div>
       <div style={{ flex: 1 }}>
         <div className="alert-title">{title}</div>
         <div className="alert-description">{message}</div>
 
         {missingFields && missingFields.length > 0 && (
-          <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 5, marginTop: 8, flexWrap: 'wrap' }}>
             {missingFields.map((field) => (
               <span
                 key={field}
                 style={{
-                  fontSize: '11px',
+                  fontSize: 10.5,
                   fontFamily: 'var(--font-mono)',
-                  padding: '2px 8px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  padding: '2px 7px',
+                  borderRadius: 'var(--r-sm)',
+                  background: 'var(--neutral-dim)',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--neutral-border)',
                 }}
               >
-                Required: {field}
+                {field}
               </span>
             ))}
           </div>

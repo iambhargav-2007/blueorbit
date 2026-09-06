@@ -94,6 +94,8 @@ export interface GeofencingAgentResponse {
 }
 
 export interface RoutingInfo {
+  intent?: string;
+  domain?: string;
   requested_capabilities: string[];
   agents_invoked: string[];
 }
@@ -126,6 +128,99 @@ export interface FishingDecisionAgentResponse {
   error?: string | null;
 }
 
+export interface CycloneAlertSchema {
+  id?: string | null;
+  name?: string | null;
+  status: string;
+  severity?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  movement_direction?: string | null;
+  movement_speed?: number | null;
+  pressure_hpa?: number | null;
+  maximum_wind_knots?: number | null;
+  affected_radius_km?: number | null;
+  issued_at?: string | null;
+  valid_until?: string | null;
+  source?: string | null;
+  confidence?: string | null;
+  data_status: string;
+}
+
+export interface SevereWeatherClassificationSchema {
+  risk_level: string;
+  is_affected: boolean;
+  affected_status: string;
+  narrative: string;
+}
+
+export interface CycloneAgentResponse {
+  success: boolean;
+  location?: LocationInfo | null;
+  date?: string | null;
+  temporal_mode?: string;
+  cyclone_alert?: CycloneAlertSchema | null;
+  severe_weather?: SevereWeatherClassificationSchema | null;
+  distance_to_center_km?: number | null;
+  narrative?: string | null;
+  advice?: string | null;
+  disclaimer?: string;
+  error?: string | null;
+}
+
+export interface ResearchMetric {
+  mean?: number | null;
+  min?: number | null;
+  max?: number | null;
+}
+
+export interface ResearchData {
+  data_status: string;
+  valid_observations?: number | null;
+  temperature_c?: ResearchMetric | null;
+  chlorophyll_mg_m3?: ResearchMetric | null;
+  mean_wind_speed_knots?: ResearchMetric | null;
+  mean_wave_height_meters?: ResearchMetric | null;
+}
+
+export interface ResearchLocationData {
+  id: string;
+  latitude: number;
+  longitude: number;
+  data: Record<string, any>;
+}
+
+export interface ResearchProvenance {
+  source: string;
+  dataset: string;
+  coverage: string;
+}
+
+export interface ResearchAgentResponse {
+  success: boolean;
+  analysis_type: string;
+  temporal_range: string;
+  location?: LocationInfo | null;
+  locations?: ResearchLocationData[] | null;
+  marine?: Record<string, any> | null;
+  weather?: Record<string, any> | null;
+  data_status: string;
+  summary_explanation?: string | null;
+  provenance: ResearchProvenance;
+  error?: string | null;
+}
+
+export interface StructuredSummary {
+  overview?: string | null;
+  key_findings?: string[];
+  operational_status?: string | null;
+  confidence?: string | null;
+  answer?: string | null;
+  evidence?: string | null;
+  context?: string | null;
+  next_action?: string | null;
+}
+
 export interface CoordinatorResponse {
   success: boolean;
   request: {
@@ -135,14 +230,22 @@ export interface CoordinatorResponse {
     date_str?: string | null;
   };
   routing: RoutingInfo;
+  intent?: string | null;
+  intelligence_domain?: string | null;
   habitat?: FishingAgentResponse | null;
   weather?: WeatherSafetyAgentResponse | null;
   geofencing?: GeofencingAgentResponse | null;
+  cyclone?: CycloneAgentResponse | null;
   fishing_decision?: FishingDecisionAgentResponse | null;
+  research?: ResearchAgentResponse | null;
   comparison?: ComparisonResult | null;
+  safety_assessment?: Record<string, any> | null;
+  sector_overview?: Record<string, any> | null;
+  structured_summary?: StructuredSummary | null;
   conversation_response?: string | null;
   errors: string[];
 }
+
 
 export interface LocationContext {
   latitude: number;
@@ -231,6 +334,7 @@ export interface ChatMessage {
   data?: CoordinatorResponse | ClarificationRequired | null;
   isError?: boolean;
   errorMessage?: string;
+  wasVoice?: boolean;
 }
 
 export interface SessionRecord {

@@ -119,8 +119,15 @@ class UnifiedFishingDecisionEngine:
 
         # Geofence
         geo_success = bool(geofence_data and geofence_data.get("success", False))
-        is_inside_eez: Optional[bool] = geofence_data.get("is_inside_eez") if geo_success else None
-        geo_status: Optional[str] = geofence_data.get("status") if geo_success else "UNKNOWN"
+        is_inside_eez: Optional[bool] = (
+            geofence_data.get("inside_indian_eez")
+            if "inside_indian_eez" in (geofence_data or {})
+            else geofence_data.get("is_inside_eez")
+        ) if geo_success else None
+        geo_status: Optional[str] = (
+            geofence_data.get("geofence_status")
+            or geofence_data.get("status")
+        ) if geo_success else "UNKNOWN"
         data_sources.append("Indian EEZ Spatial Layer (VLIZ)")
 
         # Check protected area coverage notice
@@ -140,16 +147,25 @@ class UnifiedFishingDecisionEngine:
             missing_domains.append("weather")
 
         if missing_domains:
-            if len(missing_domains) > 1:
+            dist_eez = geofence_data.get("distance_to_eez_boundary_km") or geofence_data.get("distance_to_boundary_km") if geofence_data else None
+            is_inland_or_outside = (is_inside_eez is False or geo_status in ["OUTSIDE_EEZ", "OUTSIDE EEZ"]) and (dist_eez is not None and dist_eez > 50)
+
+            if is_inland_or_outside:
+                lim_factor = "Location Outside Marine Waters"
+                reasons.append(
+                    f"Selected location is outside maritime waters (~{dist_eez:.0f} km from EEZ boundary). "
+                    "Oceanographic satellite observations (Copernicus SST/Chlorophyll) apply only to marine and coastal areas."
+                )
+            elif len(missing_domains) > 1:
                 lim_factor = "Multiple Factors"
             elif "weather" in missing_domains:
                 lim_factor = "Insufficient Weather Data"
             else:
                 lim_factor = "Insufficient Marine Data"
 
-            if "weather" in missing_domains:
+            if "weather" in missing_domains and not is_inland_or_outside:
                 reasons.append("Marine weather observations are unavailable or insufficient to evaluate sea-state safety.")
-            if "habitat" in missing_domains:
+            if "habitat" in missing_domains and not is_inland_or_outside:
                 reasons.append("Oceanographic environmental observations (SST/Chlorophyll-a) are unavailable.")
 
             return FishingDecision(
@@ -174,7 +190,7 @@ class UnifiedFishingDecisionEngine:
         # ------------------------------------------------------------------
         # 5. Geofence Boundary Check (Hard Stop)
         # ------------------------------------------------------------------
-        if is_inside_eez is False or geo_status == "OUTSIDE EEZ":
+        if is_inside_eez is False or geo_status in ["OUTSIDE EEZ", "OUTSIDE_EEZ"]:
             warnings.append(
                 "Location is outside the currently supported Indian EEZ data boundary. "
                 "(Note: This refers to dataset boundary coverage, not a determination of legal fishing rights)."

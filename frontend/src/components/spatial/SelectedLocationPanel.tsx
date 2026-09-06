@@ -1,22 +1,8 @@
 import React, { useState } from 'react';
-import { 
-  MapPin, 
-  X, 
-  ChevronRight, 
-  ChevronDown, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Wind, 
-  Fish, 
-  Compass, 
-  Orbit, 
-  Loader2, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  HelpCircle,
-  ExternalLink,
-  MessageSquare
+import {
+  MapPin, X, ChevronRight, ChevronDown,
+  Wind, Fish, Compass, CheckCircle2, AlertTriangle,
+  XCircle, HelpCircle, MessageSquare
 } from 'lucide-react';
 import { PointAnalysisResponse } from '../../types/api';
 
@@ -27,264 +13,257 @@ interface SelectedLocationPanelProps {
   onAskOrca: (locationName: string, lat: number, lon: number) => void;
 }
 
+type DecisionKey = 'FAVORABLE' | 'CAUTION' | 'NOT_RECOMMENDED' | string;
+
+const DECISION_MAP: Record<string, { label: string; icon: React.ReactNode; color: string; heroClass: string }> = {
+  FAVORABLE: {
+    label: 'Favorable',
+    icon: <CheckCircle2 size={14} />,
+    color: 'var(--success)',
+    heroClass: 'favorable',
+  },
+  CAUTION: {
+    label: 'Caution',
+    icon: <AlertTriangle size={14} />,
+    color: 'var(--warning)',
+    heroClass: 'caution',
+  },
+  NOT_RECOMMENDED: {
+    label: 'Not Recommended',
+    icon: <XCircle size={14} />,
+    color: 'var(--danger)',
+    heroClass: 'danger',
+  },
+};
+
 export const SelectedLocationPanel: React.FC<SelectedLocationPanelProps> = ({
   analysis,
   isLoading,
   onClose,
   onAskOrca,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [showFactors, setShowFactors] = useState(false);
 
+  /* ── Empty (no selection) ── */
   if (!analysis && !isLoading) {
     return (
-      <div className="spatial-floating-panel empty animate-fade-in">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
-          <Compass size={16} color="var(--cyan-primary)" />
-          <span style={{ fontSize: '12.5px' }}>Click anywhere on the maritime map to analyze ocean conditions</span>
+      <div className="spatial-floating-panel empty animate-fade-in" style={{ top: 60, right: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Compass size={14} color="var(--accent)" />
+          <span style={{ fontSize: 12.5, color: 'var(--text-muted)' }}>
+            Click the map to inspect marine conditions
+          </span>
         </div>
       </div>
     );
   }
 
-  const loc = analysis?.location;
+  const loc      = analysis?.location;
   const decision = analysis?.decision;
-  const geo = analysis?.geofence;
-  const marine = analysis?.marine;
-  const weather = analysis?.weather;
-  const isLive = analysis?.temporal_mode === 'LIVE';
+  const geo      = analysis?.geofence;
+  const marine   = analysis?.marine;
+  const weather  = analysis?.weather;
+  const isLive   = analysis?.temporal_mode === 'LIVE';
 
-  const getDecisionBadge = (d?: string | null) => {
-    switch ((d || '').toUpperCase()) {
-      case 'FAVORABLE':
-        return {
-          label: 'FAVORABLE',
-          icon: <CheckCircle2 size={15} color="var(--emerald)" />,
-          color: 'var(--emerald)',
-          bg: 'rgba(16, 185, 129, 0.12)',
-          border: 'rgba(16, 185, 129, 0.3)',
-        };
-      case 'CAUTION':
-        return {
-          label: 'CAUTION',
-          icon: <AlertTriangle size={15} color="var(--amber)" />,
-          color: 'var(--amber)',
-          bg: 'rgba(245, 158, 11, 0.12)',
-          border: 'rgba(245, 158, 11, 0.3)',
-        };
-      case 'NOT_RECOMMENDED':
-        return {
-          label: 'NOT RECOMMENDED',
-          icon: <XCircle size={15} color="var(--rose)" />,
-          color: 'var(--rose)',
-          bg: 'rgba(244, 63, 94, 0.12)',
-          border: 'rgba(244, 63, 94, 0.3)',
-        };
-      default:
-        return {
-          label: 'INSUFFICIENT DATA',
-          icon: <HelpCircle size={15} color="var(--text-muted)" />,
-          color: 'var(--text-muted)',
-          bg: 'rgba(148, 163, 184, 0.1)',
-          border: 'rgba(148, 163, 184, 0.25)',
-        };
-    }
+  const decisionKey = (decision?.decision || '').toUpperCase().replace(' ', '_');
+  const cfg = DECISION_MAP[decisionKey] || {
+    label: 'Insufficient Data',
+    icon: <HelpCircle size={14} />,
+    color: 'var(--text-muted)',
+    heroClass: 'neutral',
   };
 
-  const badge = getDecisionBadge(decision?.decision);
+  const hasFactors = decision && (
+    (decision.reasons && decision.reasons.length > 0) ||
+    (decision.warnings && decision.warnings.length > 0)
+  );
 
   return (
-    <div className="spatial-floating-panel active animate-fade-in">
+    <div className="spatial-floating-panel animate-slide-in" id="location-inspector-panel">
       {/* Header */}
       <div className="spatial-panel-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div className="spatial-pin-badge">
-            <MapPin size={14} color="var(--cyan-primary)" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <div className="spatial-pin-badge" aria-hidden="true">
+            <MapPin size={13} color="var(--accent)" />
           </div>
           <div>
             <div className="spatial-panel-title">
-              {loc?.display_name || 'Selected Maritime Point'}
+              {loc?.display_name || 'Maritime Sector'}
             </div>
             <div className="spatial-panel-coords">
-              {loc ? `${loc.latitude.toFixed(3)}° N · ${loc.longitude.toFixed(3)}° E` : '—'}
+              {loc
+                ? `${loc.latitude.toFixed(3)}° N · ${loc.longitude.toFixed(3)}° E`
+                : isLoading ? 'Resolving…' : '—'}
             </div>
           </div>
         </div>
-
-        <button className="btn-icon-subtle" onClick={onClose} aria-label="Close location panel">
-          <X size={15} />
+        <button className="btn-icon-subtle" onClick={onClose} aria-label="Close panel">
+          <X size={14} />
         </button>
       </div>
 
-      {/* Loading State */}
+      {/* Loading */}
       {isLoading && (
         <div className="spatial-analyzing-state">
-          <div className="spatial-radar-spinner">
-            <Loader2 size={18} className="animate-spin" color="var(--cyan-primary)" />
-          </div>
+          <div className="spatial-spinner" aria-hidden="true" />
           <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-normal)' }}>
-              Analyzing Marine Sector...
-            </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-              Synthesizing Copernicus SST, chlorophyll, weather safety & EEZ boundary
-            </div>
+            <div className="spatial-analyzing-label">Analyzing marine sector</div>
+            <div className="spatial-analyzing-sub">SST · Chlorophyll · Sea state · EEZ</div>
           </div>
         </div>
       )}
 
-      {/* Results Content */}
+      {/* Results */}
       {!isLoading && analysis && (
         <div className="spatial-panel-body">
-          {/* Decision Highlight Banner */}
+          {/* Decision Section - Dominant */}
           {decision && (
-            <div 
-              className="spatial-decision-banner"
-              style={{ background: badge.bg, borderColor: badge.border }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: badge.color, fontWeight: 700, fontSize: '13px' }}>
-                {badge.icon}
-                <span>{badge.label}</span>
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {decision.overall_score !== null && decision.overall_score !== undefined ? (
-                  <span>Decision Index: <strong style={{ color: badge.color }}>{decision.overall_score.toFixed(1)}/100</strong></span>
-                ) : (
-                  <span>Data Incomplete</span>
+            <div className="inspector-decision-section">
+              <div className="inspector-decision-header">
+                <div>
+                  <div className="inspector-decision-label">SECTOR ASSESSMENT</div>
+                  <div className="inspector-verdict-title" style={{ color: cfg.color }}>
+                    {cfg.icon}
+                    <span>{cfg.label}</span>
+                  </div>
+                </div>
+                {decision.overall_score != null && (
+                  <div className="inspector-score-box">
+                    <span className="inspector-score-value">{decision.overall_score.toFixed(0)}</span>
+                    <span className="inspector-score-total">/ 100</span>
+                  </div>
                 )}
               </div>
+
+              {decision.limiting_factor && (
+                <div className="inspector-limiting-factor">
+                  Limiting factor: <span>{decision.limiting_factor}</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Core Pillar Metrics */}
-          <div className="spatial-metrics-grid">
-            {/* EEZ Status */}
-            <div className="spatial-metric-card">
-              <div className="spatial-metric-label">
-                <Compass size={12} color="var(--cyan-primary)" />
-                <span>EEZ Boundary</span>
+          <div className="inspector-divider" />
+
+          {/* 3-Column Metrics - Clean columns separated by thin vertical dividers */}
+          <div className="inspector-columns-row">
+            {/* EEZ Column */}
+            <div className="inspector-col">
+              <div className="inspector-col-label">EEZ Status</div>
+              <div className="inspector-col-val">
+                {geo?.status === 'SAFE' || geo?.geofence_status === 'SAFE' || loc?.is_inside_eez
+                  ? <span style={{ color: 'var(--success)' }}>Inside</span>
+                  : geo?.status === 'WARNING'
+                  ? <span style={{ color: 'var(--warning)' }}>Buffer</span>
+                  : <span style={{ color: 'var(--danger)' }}>Outside</span>
+                }
               </div>
-              <div className="spatial-metric-val">
-                {geo?.status === 'SAFE' ? (
-                  <span style={{ color: 'var(--emerald)' }}>● Inside EEZ</span>
-                ) : geo?.status === 'WARNING' ? (
-                  <span style={{ color: 'var(--amber)' }}>▲ Buffer Warning</span>
-                ) : (
-                  <span style={{ color: 'var(--rose)' }}>✖ Outside EEZ</span>
-                )}
-              </div>
-              <div className="spatial-metric-sub">
-                {geo?.distance_to_boundary_km !== null && geo?.distance_to_boundary_km !== undefined
-                  ? `${geo.distance_to_boundary_km.toFixed(1)} km to line`
-                  : 'Boundary checked'}
+              <div className="inspector-col-sub">
+                {loc?.distance_to_boundary_km != null
+                  ? `${loc.distance_to_boundary_km.toFixed(0)} km to line`
+                  : geo?.distance_to_boundary_km != null
+                  ? `${geo.distance_to_boundary_km.toFixed(0)} km to line`
+                  : 'Sovereign EEZ'}
               </div>
             </div>
 
-            {/* Habitat Potential */}
-            <div className="spatial-metric-card">
-              <div className="spatial-metric-label">
-                <Fish size={12} color="var(--emerald)" />
-                <span>Habitat Potential</span>
-              </div>
-              <div className="spatial-metric-val">
+            <div className="inspector-col-divider" />
+
+            {/* Habitat Column */}
+            <div className="inspector-col">
+              <div className="inspector-col-label">Suitability</div>
+              <div className="inspector-col-val">
                 {marine?.fishing_potential || decision?.habitat_status || '—'}
               </div>
-              <div className="spatial-metric-sub">
-                {marine?.temperature !== null && marine?.temperature !== undefined ? `${marine.temperature.toFixed(1)}°C SST` : '—'}
-                {marine?.chlorophyll !== null && marine?.chlorophyll !== undefined ? ` · ${marine.chlorophyll.toFixed(2)} mg/m³` : ''}
+              <div className="inspector-col-sub">
+                {marine?.temperature != null ? `${marine.temperature.toFixed(1)}°C SST` : 'Copernicus'}
               </div>
             </div>
 
-            {/* Marine Weather Safety */}
-            <div className="spatial-metric-card">
-              <div className="spatial-metric-label">
-                <Wind size={12} color="var(--amber)" />
-                <span>Weather Risk</span>
+            <div className="inspector-col-divider" />
+
+            {/* Weather Column */}
+            <div className="inspector-col">
+              <div className="inspector-col-label">Sea State</div>
+              <div className="inspector-col-val">
+                {weather?.risk_level ? weather.risk_level.replace(' Risk', '') : (decision?.weather_risk ? decision.weather_risk.replace(' Risk', '') : '—')}
               </div>
-              <div className="spatial-metric-val">
-                {weather?.risk_level || decision?.weather_risk || '—'}
-              </div>
-              <div className="spatial-metric-sub">
-                {weather?.weather_conditions?.wind_speed_knots !== undefined
-                  ? `${weather.weather_conditions.wind_speed_knots.toFixed(0)} kn wind`
-                  : weather?.wind_speed_knots !== undefined
-                  ? `${weather.wind_speed_knots.toFixed(0)} kn wind`
-                  : '—'}
-                {weather?.weather_conditions?.wave_height_meters !== undefined
-                  ? ` · ${weather.weather_conditions.wave_height_meters.toFixed(1)}m wave`
-                  : weather?.wave_height_meters !== undefined
-                  ? ` · ${weather.wave_height_meters.toFixed(1)}m wave`
-                  : ''}
+              <div className="inspector-col-sub">
+                {(weather?.weather_conditions?.wind_speed_knots ?? weather?.wind_speed_knots) != null
+                  ? `${(weather?.weather_conditions?.wind_speed_knots ?? weather?.wind_speed_knots)!.toFixed(0)} kn`
+                  : ''
+                }
+                {(weather?.weather_conditions?.wave_height_meters ?? weather?.wave_height_meters) != null
+                  ? ` · ${(weather?.weather_conditions?.wave_height_meters ?? weather?.wave_height_meters)!.toFixed(1)}m`
+                  : ''
+                }
               </div>
             </div>
           </div>
 
-          {/* Provenance Tag */}
-          <div className="spatial-provenance-row">
-            <span className="source-pill" style={{ fontSize: '10.5px', padding: '2px 8px' }}>
-              {isLive ? 'Live Marine Synthesis' : `Historical Observation · ${analysis.timestamp}`}
+          <div className="inspector-divider" />
+
+          {/* Provenance */}
+          <div className="inspector-provenance-row">
+            <span className="inspector-meta-tag">
+              {isLive ? 'LIVE · COPERNICUS' : `HISTORICAL · ${analysis.timestamp || ''}`}
             </span>
-            {decision?.limiting_factor && (
-              <span className="source-pill" style={{ fontSize: '10.5px', padding: '2px 8px', color: 'var(--cyan-primary)' }}>
-                Factor: {decision.limiting_factor}
-              </span>
-            )}
           </div>
 
-          {/* Expandable Reasons & Advisories */}
-          {decision && ((decision.reasons && decision.reasons.length > 0) || (decision.warnings && decision.warnings.length > 0)) && (
-            <div style={{ marginTop: '8px' }}>
-              <button 
+          {/* Expandable factors */}
+          {hasFactors && (
+            <>
+              <button
                 className="spatial-expand-btn"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => setShowFactors(!showFactors)}
+                aria-expanded={showFactors}
               >
-                <span>{isExpanded ? 'Hide Decision Factors' : 'View Factors & Guidance'}</span>
-                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span>View Decision Factors &amp; Advisories</span>
+                {showFactors ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
               </button>
 
-              {isExpanded && (
-                <div className="spatial-expanded-factors animate-fade-in">
+              {showFactors && (
+                <div className="animate-fade-in" style={{ marginTop: 10 }}>
                   {decision.reasons && decision.reasons.length > 0 && (
-                    <div style={{ marginBottom: '6px' }}>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '3px' }}>
-                        Rationale:
+                    <div style={{ marginBottom: 8 }}>
+                      <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5, letterSpacing: '0.04em' }}>
+                        Decision Rationale
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11.5px', color: 'var(--text-normal)', lineHeight: 1.4 }}>
-                        {decision.reasons.map((r, i) => (
-                          <li key={i}>{r}</li>
+                      <ul style={{ margin: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {decision.reasons.map((r: string, i: number) => (
+                          <li key={i} style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{r}</li>
                         ))}
                       </ul>
                     </div>
                   )}
-
                   {decision.warnings && decision.warnings.length > 0 && (
                     <div>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--amber)', marginBottom: '3px' }}>
-                        Advisories:
+                      <div style={{ fontSize: 10, fontWeight: 400, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5, letterSpacing: '0.04em' }}>
+                        Safety Advisories
                       </div>
-                      <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '11px', color: 'var(--text-normal)', lineHeight: 1.35 }}>
-                        {decision.warnings.map((w, i) => (
-                          <li key={i}>{w}</li>
+                      <ul style={{ margin: 0, paddingLeft: 15, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {decision.warnings.map((w: string, i: number) => (
+                          <li key={i} style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>{w}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          {/* Action: Ask ORCA in Assistant */}
+          {/* Ask ORCA CTA */}
           {loc && (
-            <div style={{ marginTop: '10px' }}>
-              <button 
-                className="btn-primary" 
-                style={{ width: '100%', fontSize: '12px', padding: '8px 12px', justifyContent: 'center' }}
-                onClick={() => onAskOrca(loc.display_name, loc.latitude, loc.longitude)}
-              >
-                <MessageSquare size={14} />
-                <span>Ask ORCA About This Sector</span>
-              </button>
-            </div>
+            <button
+              className="inspector-cta-btn"
+              id="btn-ask-orca-spatial"
+              onClick={() => onAskOrca(loc.display_name, loc.latitude, loc.longitude)}
+              aria-label="Open Decision Assistant for this sector"
+            >
+              <MessageSquare size={13} />
+              <span>Ask ORCA About This Sector</span>
+            </button>
           )}
         </div>
       )}

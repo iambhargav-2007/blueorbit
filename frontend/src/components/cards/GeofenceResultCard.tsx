@@ -38,35 +38,51 @@ export const GeofenceResultCard: React.FC<GeofenceResultCardProps> = ({ data }) 
       </div>
 
       <div className="result-card-body">
-        {/* Border Status Highlight */}
-        <div className="metric-highlight-panel">
+        {/* Border Status Highlight — Flat Left Accent Hero */}
+        <div className={`decision-accent-hero ${isInside ? 'favorable' : 'danger'}`}>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <div className="decision-accent-label">
               Jurisdiction Zone
             </div>
-            <div className="metric-highlight-value" style={{ fontSize: '20px', marginTop: '4px' }}>
+            <div className="decision-verdict" style={{ color: isInside ? 'var(--success)' : 'var(--danger)', fontSize: 16 }}>
               {data.zone_name || (isInside ? 'Indian Sovereign EEZ' : 'International / External Waters')}
             </div>
           </div>
-          <div className={`metric-highlight-category ${getStatusClass(status)}`}>
-            {status}
+          <div className="decision-score-block">
+            <div className="decision-score" style={{ fontSize: 16, color: isInside ? 'var(--success)' : 'var(--danger)' }}>
+              {status}
+            </div>
+            <div className="decision-score-label">Compliance Status</div>
           </div>
         </div>
 
-        {/* Spatial Metrics */}
-        <div className="metrics-grid">
-          <div className="metric-item">
-            <div className="metric-label">EEZ Interior Status</div>
-            <div className="metric-data" style={{ color: isInside ? 'var(--emerald)' : 'var(--rose)' }}>
+        {/* Spatial Metrics — Single Divided Row */}
+        <div className="metrics-row-divided">
+          <div className="divided-metric-col">
+            <div className="metric-label">Interior Status</div>
+            <div className="metric-data sm" style={{ color: isInside ? 'var(--success)' : 'var(--danger)' }}>
               {isInside ? 'Inside Sovereign EEZ' : 'Outside Indian EEZ'}
             </div>
+            <div className="metric-sub">Maritime Boundary</div>
           </div>
 
-          <div className="metric-item">
-            <div className="metric-label">Distance to Boundary</div>
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label">Distance to Line</div>
             <div className="metric-data">
-              {distance !== null && distance !== undefined ? `${distance.toFixed(1)} km` : '—'}
+              {distance !== null && distance !== undefined ? `${distance.toFixed(1)}` : '—'}
+              <span className="metric-unit"> km</span>
             </div>
+            <div className="metric-sub">To sovereign boundary</div>
+          </div>
+
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label">Coordinate Datum</div>
+            <div className="metric-data sm">WGS84</div>
+            <div className="metric-sub">Geometric Engine</div>
           </div>
         </div>
 

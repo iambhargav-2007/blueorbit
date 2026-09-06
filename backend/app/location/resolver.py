@@ -309,6 +309,28 @@ class LocationResolver:
         return None
 
     @classmethod
+    def check_inland_coordinates(cls, lat: float, lon: float) -> Optional[str]:
+        """
+        Detects if coordinates are clearly inside major inland / landlocked Indian regions
+        where marine oceanography does not apply.
+        """
+        # Rajasthan / Thar desert region (approx 24.5°N - 30.5°N, 69.5°E - 78.0°E)
+        if 24.5 <= lat <= 30.5 and 69.5 <= lon <= 78.0:
+            return (
+                f"Coordinates ({lat:.2f}°N, {lon:.2f}°E) are located inland in Rajasthan / northwest India, "
+                "which has no coastline. Marine habitat observations (Copernicus SST, Chlorophyll-a) and marine fishing "
+                "suitability apply only to coastal and ocean waters. "
+                "Did you mean the Gujarat coast (e.g., Porbandar, Veraval, Okha) or Mumbai?"
+            )
+        # Northern / Central inland (Delhi, UP, MP, Punjab, Haryana)
+        if 23.0 <= lat <= 32.0 and 75.0 <= lon <= 84.0:
+            return (
+                f"Coordinates ({lat:.2f}°N, {lon:.2f}°E) are located in inland northern/central India with no maritime access. "
+                "Please select a sector along the Indian coastline (e.g. Mumbai, Goa, Mangalore, Kochi, or Gujarat)."
+            )
+        return None
+
+    @classmethod
     def get_suggestions(cls, query: str) -> List[str]:
         """Returns matching coastal place suggestions."""
         q = query.lower().strip()

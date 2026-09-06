@@ -407,6 +407,14 @@ class FishingDecision(BaseModel):
         default=None,
         description="Categorical weather risk: Low Risk, Moderate Risk, High Risk, Very High Risk, or Insufficient Data."
     )
+    severe_weather_status: Optional[str] = Field(
+        default=None,
+        description="Categorical severe weather status: NOT_AFFECTED, POTENTIALLY_AFFECTED, AFFECTED, NO_VERIFIED_DATA."
+    )
+    severe_weather_risk: Optional[str] = Field(
+        default=None,
+        description="Severe weather risk level: NORMAL, ELEVATED, SEVERE, EXTREME, INSUFFICIENT_DATA."
+    )
     geofence_status: Optional[str] = Field(
         default=None,
         description="Categorical geofence compliance: SAFE, WARNING, OUTSIDE EEZ, or Insufficient Data."
@@ -468,3 +476,87 @@ class FishingDecisionAgentResponse(BaseModel):
         description="Error message when success=False."
     )
 
+
+class CycloneAlertSchema(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    status: str
+    severity: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    movement_direction: Optional[str] = None
+    movement_speed: Optional[float] = None
+    pressure_hpa: Optional[float] = None
+    maximum_wind_knots: Optional[float] = None
+    affected_radius_km: Optional[float] = None
+    issued_at: Optional[str] = None
+    valid_until: Optional[str] = None
+    source: Optional[str] = None
+    confidence: Optional[str] = None
+    data_status: str = "UNAVAILABLE"
+
+class SevereWeatherClassificationSchema(BaseModel):
+    risk_level: str
+    is_affected: bool
+    affected_status: str
+    narrative: str
+
+class CycloneAgentResponse(BaseModel):
+    success: bool
+    location: Optional[LocationInfo] = None
+    date: Optional[str] = None
+    temporal_mode: str = "LIVE"
+    cyclone_alert: Optional[CycloneAlertSchema] = None
+    severe_weather: Optional[SevereWeatherClassificationSchema] = None
+    distance_to_center_km: Optional[float] = None
+    narrative: Optional[str] = None
+    advice: Optional[str] = None
+    disclaimer: str = "Decision support indicator based on available environmental and marine observations. Does not guarantee vessel safety."
+    error: Optional[str] = None
+
+# ---------------------------------------------------------------------------
+# Step 26: Research / Historical Marine Agent schemas
+# ---------------------------------------------------------------------------
+
+class ResearchMetric(BaseModel):
+    mean: Optional[float] = None
+    min: Optional[float] = None
+    max: Optional[float] = None
+
+class ResearchData(BaseModel):
+    data_status: str
+    valid_observations: Optional[int] = None
+    temperature_c: Optional[ResearchMetric] = None
+    chlorophyll_mg_m3: Optional[ResearchMetric] = None
+    mean_wind_speed_knots: Optional[ResearchMetric] = None
+    mean_wave_height_meters: Optional[ResearchMetric] = None
+
+class ResearchLocationData(BaseModel):
+    id: str
+    latitude: float
+    longitude: float
+    data: Dict[str, Any]
+
+class ResearchProvenance(BaseModel):
+    source: str
+    dataset: str
+    coverage: str
+
+class ResearchAgentResponse(BaseModel):
+    success: bool
+    analysis_type: str = Field(
+        default="POINT_ANALYSIS",
+        description="Type of historical analysis: POINT_ANALYSIS, TEMPORAL_SUMMARY, SPATIAL_COMPARISON, etc."
+    )
+    temporal_range: str
+    location: Optional[LocationInfo] = None
+    locations: Optional[List[ResearchLocationData]] = None
+    marine: Optional[Dict[str, Any]] = None
+    weather: Optional[Dict[str, Any]] = None
+    data_status: str
+    summary_explanation: Optional[str] = Field(
+        default=None,
+        description="LLM explanation of the historical data trends without modifying values."
+    )
+    provenance: ResearchProvenance
+    error: Optional[str] = None

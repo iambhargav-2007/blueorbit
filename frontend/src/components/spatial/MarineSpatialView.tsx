@@ -44,6 +44,7 @@ export const MarineSpatialView: React.FC<MarineSpatialViewProps> = ({
   const [showEez, setShowEez] = useState(true);
   const [activeLayer, setActiveLayer] = useState<SpatialLayerType>('none');
   const [isLoadingLayer, setIsLoadingLayer] = useState(false);
+  const [showLiveVessels, setShowLiveVessels] = useState(false);
 
   // Selected coordinate analysis
   const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lon: number }>({
@@ -95,26 +96,30 @@ export const MarineSpatialView: React.FC<MarineSpatialViewProps> = ({
 
   return (
     <div className="spatial-view-container animate-fade-in">
-      {/* Top Floating Mini-Nav for Spatial Context */}
+      {/* Top Floating Unified Control Bar for Spatial Context */}
       <div className="spatial-top-bar">
-        <div className="spatial-top-pill">
-          <Compass size={14} color="var(--cyan-primary)" />
-          <span style={{ fontWeight: 600, color: 'var(--text-bright)' }}>
-            {currentLocationContext?.display_name || 'Indian West Coast Maritime Grid'}
-          </span>
-          <span style={{ color: 'var(--text-muted)' }}>
-            ({selectedCoords.lat.toFixed(2)}° N, {selectedCoords.lon.toFixed(2)}° E)
-          </span>
-        </div>
+        <div className="spatial-control-bar">
+          <div className="control-bar-segment location-segment">
+            <Compass size={13} className="segment-icon" />
+            <span className="segment-title">
+              {currentLocationContext?.display_name || 'Indian West Coast Maritime Grid'}
+            </span>
+            <span className="segment-coords">
+              {selectedCoords.lat.toFixed(2)}° N · {selectedCoords.lon.toFixed(2)}° E
+            </span>
+          </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button className="spatial-top-btn" onClick={onOpenDateModal} title="Change observation date">
-            <Calendar size={13} color="var(--cyan-primary)" />
+          <div className="control-bar-divider" />
+
+          <button className="control-bar-btn" onClick={onOpenDateModal} title="Change observation date">
+            <Calendar size={13} className="segment-icon" />
             <span>{observationDate && observationDate !== 'today' ? `Historical: ${observationDate}` : 'Today (LIVE)'}</span>
           </button>
 
+          <div className="control-bar-divider" />
+
           <button 
-            className="spatial-top-btn primary"
+            className="control-bar-btn primary-action"
             onClick={() => onSwitchToChatWithLocation(
               currentLocationContext?.display_name || 'Selected Sector',
               selectedCoords.lat,
@@ -123,7 +128,7 @@ export const MarineSpatialView: React.FC<MarineSpatialViewProps> = ({
             title="Switch to conversational decision support"
           >
             <MessageSquare size={13} />
-            <span>Ask ORCA AI</span>
+            <span>Ask ORCA</span>
           </button>
         </div>
       </div>
@@ -135,6 +140,7 @@ export const MarineSpatialView: React.FC<MarineSpatialViewProps> = ({
         selectedLat={selectedCoords.lat}
         selectedLon={selectedCoords.lon}
         showEez={showEez}
+        showLiveVessels={showLiveVessels}
         activeLayer={activeLayer}
         observationDate={observationDate}
         onSelectCoordinates={handleSelectCoordinates}
@@ -147,6 +153,8 @@ export const MarineSpatialView: React.FC<MarineSpatialViewProps> = ({
       <LayerControlPanel
         showEez={showEez}
         onToggleEez={setShowEez}
+        showLiveVessels={showLiveVessels}
+        onToggleLiveVessels={setShowLiveVessels}
         activeLayer={activeLayer}
         onChangeLayer={setActiveLayer}
         onFitEez={() => fitEezRef.current?.()}

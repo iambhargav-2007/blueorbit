@@ -107,7 +107,26 @@ class TemporalContextResolver:
             return comp_res
 
         # ------------------------------------------------------------------
-        # 2. Priority: Explicit date provided in API request payload
+        # 2. Check for keywords in query_text indicating LIVE (today/current/now/latest)
+        # ------------------------------------------------------------------
+        if self._has_live_keywords(query_lower):
+            # If query specifically says "today", "current", "now", "latest", "right now"
+            # It takes precedence over past conversation state and UI context pills!
+            return TemporalResolution(
+                mode=TemporalMode.LIVE,
+                date_str=ref_date_str,
+                reason="Query contains live temporal keyword (today/now/current)"
+            )
+
+        # ------------------------------------------------------------------
+        # 3. Check for explicit date embedded in query_text
+        # ------------------------------------------------------------------
+        parsed_from_query = self._extract_date_from_text(query_lower, ref_date)
+        if parsed_from_query is not None:
+            return self._classify_single_date(parsed_from_query, ref_date, reason="Extracted date from query text")
+
+        # ------------------------------------------------------------------
+        # 4. Fall back to explicit date provided in API request payload (UI context pill)
         # ------------------------------------------------------------------
         if explicit_date_str is not None and explicit_date_str.strip():
             cleaned_explicit = explicit_date_str.strip()
@@ -120,25 +139,6 @@ class TemporalContextResolver:
                     date_str=cleaned_explicit,
                     reason=f"Explicit date provided in unparseable or custom format: {cleaned_explicit}"
                 )
-
-        # ------------------------------------------------------------------
-        # 3. Check for keywords in query_text indicating LIVE (today/current/now/latest)
-        # ------------------------------------------------------------------
-        if self._has_live_keywords(query_lower):
-            # If query specifically says "today", "current", "now", "latest", "right now"
-            # It takes precedence over past conversation state!
-            return TemporalResolution(
-                mode=TemporalMode.LIVE,
-                date_str=ref_date_str,
-                reason="Query contains live temporal keyword (today/now/current)"
-            )
-
-        # ------------------------------------------------------------------
-        # 4. Check for explicit date embedded in query_text
-        # ------------------------------------------------------------------
-        parsed_from_query = self._extract_date_from_text(query_lower, ref_date)
-        if parsed_from_query is not None:
-            return self._classify_single_date(parsed_from_query, ref_date, reason="Extracted date from query text")
 
         # ------------------------------------------------------------------
         # 5. Fall back to conversation state stored date
@@ -170,6 +170,17 @@ class TemporalContextResolver:
             r"\bright now\b",
             r"\blatest\b",
             r"\bpresent\b",
+            # Hindi / Marathi
+            r"आज",
+            r"अभी",
+            r"आता",
+            # Telugu
+            r"ఈరోజు",
+            r"నేడు",
+            r"ఇప్పుడు",
+            # Gujarati
+            r"આજે",
+            r"અત્યારે",
         ]
         return any(re.search(pat, text) for pat in patterns)
 

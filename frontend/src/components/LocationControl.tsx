@@ -19,6 +19,7 @@ interface LocationControlProps {
   currentLocationContext: LocationContext | null;
   onSaveLocation: (loc: LocationContext | null) => void;
   onClose: () => void;
+  onOpenSpatialMap?: () => void;
 }
 
 type TabType = 'gps' | 'search' | 'map' | 'manual';
@@ -37,11 +38,11 @@ export const LocationControl: React.FC<LocationControlProps> = ({
   currentLocationContext,
   onSaveLocation,
   onClose,
+  onOpenSpatialMap,
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>(
     currentLocationContext?.source === 'gps' ? 'gps' :
-    currentLocationContext?.source === 'map' ? 'map' :
-    currentLocationContext?.source === 'search' ? 'search' : 'gps'
+    currentLocationContext?.source === 'search' ? 'search' : 'search'
   );
 
   // GPS State
@@ -184,14 +185,14 @@ export const LocationControl: React.FC<LocationControlProps> = ({
   return (
     <div className="popover-backdrop" onClick={onClose}>
       <div
-        className="popover-panel animate-fade-in"
+        className="popover-panel"
         style={{ maxWidth: '520px', width: '92%' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="popover-header">
           <div className="popover-title">
-            <Compass size={18} color="var(--cyan-primary)" />
+            <Compass size={16} color="var(--accent)" />
             <span>Marine Location Intelligence</span>
           </div>
           <button className="btn-icon" onClick={onClose} aria-label="Close">
@@ -199,17 +200,19 @@ export const LocationControl: React.FC<LocationControlProps> = ({
           </button>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Modal Scrollable Body */}
+        <div className="popover-body">
+          {/* Navigation Tabs */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '6px',
             marginBottom: '16px',
-            background: 'var(--bg-card)',
+            background: 'var(--bg-surface)',
             padding: '4px',
             borderRadius: '8px',
-            border: '1px solid var(--border-subtle)',
+            border: '1px solid var(--border-default)',
           }}
         >
           <button
@@ -255,15 +258,15 @@ export const LocationControl: React.FC<LocationControlProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div
               style={{
-                background: 'rgba(6, 182, 212, 0.05)',
-                border: '1px solid rgba(6, 182, 212, 0.2)',
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border-default)',
                 borderRadius: '8px',
                 padding: '14px',
                 textAlign: 'center',
               }}
             >
-              <Navigation size={28} color="var(--cyan-primary)" style={{ margin: '0 auto 8px' }} />
-              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
+              <Navigation size={22} color="var(--accent)" style={{ margin: '0 auto 8px' }} />
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
                 Detect Current Device Position
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.4 }}>
@@ -349,15 +352,15 @@ export const LocationControl: React.FC<LocationControlProps> = ({
             {searchResult && (
               <div
                 style={{
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  borderRadius: '8px',
+                  background: 'var(--bg-surface-elevated)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: 'var(--r-md)',
                   padding: '12px',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                  <CheckCircle2 size={16} color="var(--emerald)" />
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--emerald)' }}>
+                  <CheckCircle2 size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
                     {searchResult.display_name}
                   </span>
                 </div>
@@ -426,17 +429,43 @@ export const LocationControl: React.FC<LocationControlProps> = ({
         {/* TAB 3: Interactive Marine Map */}
         {activeTab === 'map' && (
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              Click anywhere on the Arabian Sea or drag the pin to select target coordinates.
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Click anywhere on the Arabian Sea to select target coordinates.
+              </div>
+              {onOpenSpatialMap && (
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ fontSize: '11px', padding: '4px 10px' }}
+                  onClick={() => {
+                    onClose();
+                    onOpenSpatialMap();
+                  }}
+                >
+                  <Compass size={12} color="var(--accent)" />
+                  <span>Full Map View</span>
+                </button>
+              )}
             </div>
-            <MarineMap
-              initialLat={currentLocationContext?.latitude || 18.5}
-              initialLon={currentLocationContext?.longitude || 71.5}
-              onSelectLocation={(loc) => {
-                onSaveLocation(loc);
-                onClose();
-              }}
-            />
+            <div style={{ height: '260px', position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+              <MarineMap
+                initialLat={currentLocationContext?.latitude || 18.5}
+                initialLon={currentLocationContext?.longitude || 71.5}
+                selectedLat={currentLocationContext?.latitude || 18.5}
+                selectedLon={currentLocationContext?.longitude || 71.5}
+                onSelectCoordinates={(clickedLat, clickedLon) => {
+                  onSaveLocation({
+                    latitude: clickedLat,
+                    longitude: clickedLon,
+                    display_name: `Sector ${clickedLat.toFixed(2)}° N · ${clickedLon.toFixed(2)}° E`,
+                    source: 'map',
+                    timestamp: new Date().toISOString(),
+                  });
+                  onClose();
+                }}
+              />
+            </div>
           </div>
         )}
 
@@ -522,6 +551,7 @@ export const LocationControl: React.FC<LocationControlProps> = ({
           <button type="button" className="btn-secondary" onClick={onClose}>
             Close
           </button>
+        </div>
         </div>
       </div>
     </div>

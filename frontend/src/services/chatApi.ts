@@ -140,3 +140,32 @@ export async function getLocationSuggestions(q: string = ''): Promise<string[]> 
     return [];
   }
 }
+
+/**
+ * Sends text to the Localization Agent TTS endpoint and plays the audio automatically.
+ */
+export async function synthesizeAndPlayAudio(text: string, language: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/voice/synthesize`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text, language }),
+    });
+
+    if (!res.ok) {
+      console.error('Failed to synthesize audio:', res.status);
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+  } catch (err) {
+    console.error('Error playing synthesized audio:', err);
+  }
+}

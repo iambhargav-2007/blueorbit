@@ -33,6 +33,7 @@ from .state_manager import ConversationStateManager
 from .context_resolver import resolve_context, ResolvedContext
 from .schemas import ClarificationRequired
 from ..coordinator.coordinator import OrcaCoordinator
+from ..coordinator.schemas import IntentEnum, IntelligenceDomainEnum
 from ..coordinator.schemas import CoordinatorResponse, RoutingInfo
 from ..location.schemas import LocationContext
 from ..location.resolver import LocationResolver
@@ -77,12 +78,14 @@ def _get_conversational_response(query_text: str) -> Optional[str]:
     }
     if clean in help_queries:
         return (
-            "I am Blue Orbit (ORCA), a multi-agent decision-support platform for fishermen and coast guards "
-            "along the Indian West Coast. I provide:\n"
-            "• Live & historical habitat suitability (Copernicus SST & chlorophyll-a)\n"
-            "• Sea state weather safety (wind speed, wave height, risk scoring)\n"
-            "• Indian EEZ spatial compliance (distance to boundary & zone validation)\n\n"
-            "To begin, you can ask a question with coordinates (e.g. 'What is the habitat suitability at 19.5, 70.5 today?')."
+            "I am Blue Orbit (ORCA), a multi-agent coastal and marine intelligence platform supporting "
+            "fishermen, coastal guards, and marine researchers along the Indian coastline.\n\n"
+            "Key intelligence domains:\n"
+            "• Marine Intelligence — Copernicus SST, Chlorophyll-a, and habitat conditions\n"
+            "• Maritime Safety — Sea state wind/waves, IMD cyclone alerts, and operational risk\n"
+            "• Geospatial Intelligence — Indian EEZ boundaries, baseline distance, and territorial waters\n"
+            "• Multi-Sector Insights — Unified sector intelligence for marine navigation and research\n\n"
+            "Ask about active cyclones, weather safety, marine ecology, or coordinates (e.g. 'What is the sea state at 19.5, 70.5 today?')."
         )
 
     return None
@@ -216,8 +219,16 @@ class ConversationCoordinator:
                 errors=[],
             )
 
-        # Step 1.5 — Landlocked inquiry check (e.g. "Rajasthan coast")
+        # Step 1.5 — Landlocked inquiry check (e.g. "Rajasthan coast" or inland coordinates)
         landlocked_msg = LocationResolver.check_landlocked_mention(query_text)
+        if not landlocked_msg:
+            active_lat = latitude if latitude is not None else (state.latitude if state else None)
+            active_lon = longitude if longitude is not None else (state.longitude if state else None)
+            if active_lat is not None and active_lon is not None:
+                clean_q_check = query_text.lower()
+                if any(term in clean_q_check for term in ["fish", "coast", "marine", "sea", "ocean", "water", "catch", "weather", "sail", "boat"]):
+                    landlocked_msg = LocationResolver.check_inland_coordinates(active_lat, active_lon)
+
         if landlocked_msg:
             return CoordinatorResponse(
                 success=True,
@@ -249,12 +260,16 @@ class ConversationCoordinator:
                 errors=[],
             )
 
-        # Step 2 — Determine which capabilities the query requires
-        # We ask the router directly (same router the coordinator uses internally).
-        requested_caps = self._coordinator._router.get_capabilities(query_text)
+        # Step 2 — Determine which capabilities and intent the query requires
+        intent, domain, requested_caps = self._coordinator._router.classify_intent(query_text)
 
-        needs_coords = any(c in requested_caps for c in ["habitat", "weather", "geofencing", "fishing_decision"])
-        needs_date = any(c in requested_caps for c in ["habitat", "weather", "fishing_decision"])
+        # Severe weather queries (cyclones) check basin-wide status and do not strictly require coordinates
+        if intent in {IntentEnum.SEVERE_WEATHER.value, "severe_weather", "SEVERE_WEATHER"}:
+            needs_coords = False
+            needs_date = False
+        else:
+            needs_coords = any(c in requested_caps for c in ["habitat", "weather", "geofencing", "fishing_decision"])
+            needs_date = any(c in requested_caps for c in ["habitat", "weather", "fishing_decision"])
 
         # Step 3 — Resolve effective lat/lon/date
         resolution = resolve_context(
@@ -275,7 +290,7 @@ class ConversationCoordinator:
             )
             return resolution
 
-        # Step 5 — Call the existing coordinator with resolved inputs AND cached capabilities
+        # Step 5 — Call the coordinator with resolved inputs AND classified intent/capabilities
         result: CoordinatorResponse = self._coordinator.process_request(
             query_text=query_text,
             latitude=resolution.latitude,
@@ -283,6 +298,8 @@ class ConversationCoordinator:
             date_str=resolution.date_str,
             temporal_resolution=resolution.temporal_resolution,
             requested_capabilities=requested_caps,
+            intent=intent,
+            domain=domain,
         )
 
         # Step 6 — Update session state from this turn's results

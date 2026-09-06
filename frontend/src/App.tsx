@@ -8,7 +8,7 @@ import { LocationControl } from './components/LocationControl';
 import { DateControl } from './components/DateControl';
 import { checkBackendHealth, sendChatMessage, ApiError } from './services/chatApi';
 import { ChatMessage, SessionRecord, CoordinatorResponse, ClarificationRequired, LocationContext } from './types/api';
-import { Loader2 } from 'lucide-react';
+import { Orbit } from 'lucide-react';
 import { MarineSpatialView } from './components/spatial/MarineSpatialView';
 
 const createSessionId = () => `orca-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
@@ -22,7 +22,7 @@ export const App: React.FC = () => {
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
-  // Context: Location & Date (default center to Goa Coastal Zone)
+  // Context: Location & Date (default to 2025-10-01 to match pre-processed high-res layers with instant sub-second analysis)
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>({ lat: 15.41, lon: 73.80 });
   const [locationContext, setLocationContext] = useState<LocationContext | null>({
     latitude: 15.41,
@@ -31,7 +31,7 @@ export const App: React.FC = () => {
     source: 'map',
     timestamp: new Date().toISOString(),
   });
-  const [dateStr, setDateStr] = useState<string | null>('today');
+  const [dateStr, setDateStr] = useState<string | null>('2025-10-01');
 
   // Modals & UI States
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);
@@ -124,6 +124,10 @@ export const App: React.FC = () => {
     const messageText = (textToSend !== undefined ? textToSend : input).trim();
     if (!messageText || isLoading) return;
 
+    // Read and clear the voice flag
+    const wasVoice = window.sessionStorage.getItem('last_input_was_voice') === 'true';
+    window.sessionStorage.removeItem('last_input_was_voice');
+
     const activeLoc = overrideLocation !== undefined ? overrideLocation : location;
 
     // Add user message to UI
@@ -132,6 +136,7 @@ export const App: React.FC = () => {
       sender: 'user',
       timestamp: new Date().toISOString(),
       text: messageText,
+      wasVoice,
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -144,7 +149,7 @@ export const App: React.FC = () => {
         message: messageText,
         latitude: activeLoc?.lat,
         longitude: activeLoc?.lon,
-        date_str: dateStr === 'today' ? undefined : dateStr || undefined,
+        date_str: wasVoice ? undefined : (dateStr === 'today' ? undefined : dateStr || undefined),
         location_context: locationContext || undefined,
       });
 
@@ -172,6 +177,7 @@ export const App: React.FC = () => {
         sender: 'assistant',
         timestamp: new Date().toISOString(),
         data: response,
+        wasVoice,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -264,12 +270,16 @@ export const App: React.FC = () => {
                   {isLoading && (
                     <div className="message-row assistant animate-fade-in">
                       <div className="message-avatar orca-avatar">
-                        <Loader2 size={16} className="animate-spin" />
+                        <Orbit size={13} />
                       </div>
                       <div className="message-bubble assistant-bubble">
                         <div className="loading-indicator">
-                          <Loader2 size={16} className="animate-spin" />
-                          <span>Analyzing marine conditions & spatial intelligence...</span>
+                          <div className="loading-dots" aria-label="Analyzing">
+                            <span /><span /><span />
+                          </div>
+                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                            Analyzing marine conditions…
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -308,6 +318,7 @@ export const App: React.FC = () => {
             }
           }}
           onClose={() => setIsLocationOpen(false)}
+          onOpenSpatialMap={() => setActiveView('map')}
         />
       )}
 

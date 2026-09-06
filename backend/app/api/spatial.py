@@ -131,6 +131,9 @@ def get_eez_boundary():
     return _get_eez_geojson()
 
 
+_point_cache: Dict[str, PointAnalysisResponse] = {}
+
+
 @router.get("/point", response_model=PointAnalysisResponse)
 def analyze_point(
     lat: float = Query(..., ge=-90.0, le=90.0, description="Latitude"),
@@ -150,6 +153,11 @@ def analyze_point(
     )
     resolved_date = temp_res.date_str
     temporal_mode_str = temp_res.mode.value
+
+    # Check memory cache
+    cache_key = f"{round(lat, 3)}_{round(lon, 3)}_{resolved_date}"
+    if cache_key in _point_cache:
+        return _point_cache[cache_key]
 
     # 2. Resolve place name
     from app.location.resolver import COASTAL_PLACES
@@ -198,20 +206,36 @@ def analyze_point(
 
     # 4. Extract sub-domain items
     fishing_dec: FishingDecision = decision_result["decision"]
-    hab_data = decision_result.get("habitat_data")
-    weath_data = decision_result.get("weather_data")
-    geo_data = decision_result.get("geofence_data") or {}
+    hab_data = decision_result.get("habitat") or decision_result.get("habitat_data")
+    weath_data = decision_result.get("weather") or decision_result.get("weather_data")
+    geo_data = decision_result.get("geofencing") or decision_result.get("geofence_data") or {}
+
+    # Ensure geofencing is always authoritatively computed
+    if not geo_data or "inside_indian_eez" not in geo_data:
+        try:
+            geo_data = _geofence_tool.check_geofence(latitude=lat, longitude=lon)
+        except Exception:
+            pass
+
+    is_inside = bool(geo_data.get("inside_indian_eez", geo_data.get("is_inside_eez", False)))
+    dist_km = geo_data.get("distance_to_eez_boundary_km", geo_data.get("distance_to_boundary_km"))
+    geo_status = geo_data.get("geofence_status", "SAFE" if is_inside else "OUTSIDE_EEZ")
+
+    # Normalize keys for frontend API contract
+    geo_data["status"] = geo_status
+    geo_data["is_inside_eez"] = is_inside
+    geo_data["distance_to_boundary_km"] = dist_km
 
     loc_obj = PointAnalysisLocation(
         latitude=lat,
         longitude=lon,
         display_name=display_name,
-        is_inside_eez=bool(geo_data.get("is_inside_eez", False)),
-        distance_to_boundary_km=geo_data.get("distance_to_boundary_km"),
+        is_inside_eez=is_inside,
+        distance_to_boundary_km=dist_km,
         zone_name=geo_data.get("zone_name"),
     )
 
-    return PointAnalysisResponse(
+    res = PointAnalysisResponse(
         success=True,
         location=loc_obj,
         geofence=geo_data,
@@ -222,6 +246,8 @@ def analyze_point(
         timestamp=resolved_date or "",
         error=None,
     )
+    _point_cache[cache_key] = res
+    return res
 
 
 @router.get("/grid", response_model=GridLayerResponse)

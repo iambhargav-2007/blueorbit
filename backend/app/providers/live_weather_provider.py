@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # User-Agent for compliant API consumption
 HTTP_USER_AGENT = "BlueOrbit-MarineIntelligence/1.0 (SIH 2026)"
-DEFAULT_TIMEOUT_SECONDS = 6.0
+DEFAULT_TIMEOUT_SECONDS = 3.0
 CACHE_TTL_SECONDS = 300.0  # 5-minute in-memory cache for repeated sector queries
 
 

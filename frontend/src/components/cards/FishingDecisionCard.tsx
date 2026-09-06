@@ -1,16 +1,7 @@
-import React from 'react';
-import { 
-  Anchor, 
-  CheckCircle2, 
-  AlertTriangle, 
-  XCircle, 
-  HelpCircle, 
-  Wind, 
-  Fish, 
-  ShieldCheck, 
-  ShieldAlert,
-  Compass,
-  AlertCircle
+import React, { useState } from 'react';
+import {
+  Anchor, CheckCircle2, AlertTriangle, XCircle, HelpCircle,
+  Wind, Fish, Compass, AlertCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { FishingDecisionAgentResponse } from '../../types/api';
 
@@ -18,224 +9,202 @@ interface FishingDecisionCardProps {
   data: FishingDecisionAgentResponse;
 }
 
+type DecisionKey = 'FAVORABLE' | 'CAUTION' | 'NOT_RECOMMENDED' | 'INSUFFICIENT_DATA';
+
+const DECISION_CONFIG: Record<DecisionKey, {
+  label: string;
+  icon: React.ReactNode;
+  heroClass: string;
+  verdictClass: string;
+}> = {
+  FAVORABLE: {
+    label: 'Favorable',
+    icon: <CheckCircle2 size={16} />,
+    heroClass: 'favorable',
+    verdictClass: 'favorable',
+  },
+  CAUTION: {
+    label: 'Caution',
+    icon: <AlertTriangle size={16} />,
+    heroClass: 'caution',
+    verdictClass: 'caution',
+  },
+  NOT_RECOMMENDED: {
+    label: 'Not Recommended',
+    icon: <XCircle size={16} />,
+    heroClass: 'danger',
+    verdictClass: 'danger',
+  },
+  INSUFFICIENT_DATA: {
+    label: 'Insufficient Data',
+    icon: <HelpCircle size={16} />,
+    heroClass: 'neutral',
+    verdictClass: 'neutral',
+  },
+};
+
 export const FishingDecisionCard: React.FC<FishingDecisionCardProps> = ({ data }) => {
+  const [showDetails, setShowDetails] = useState(false);
   const decisionObj = data.decision;
   if (!decisionObj) return null;
 
-  const decision = decisionObj.decision || 'INSUFFICIENT_DATA';
+  const decisionKey = (decisionObj.decision?.toUpperCase().replace(' ', '_') || 'INSUFFICIENT_DATA') as DecisionKey;
+  const cfg = DECISION_CONFIG[decisionKey] || DECISION_CONFIG.INSUFFICIENT_DATA;
+
   const score = decisionObj.overall_score;
   const isLive = decisionObj.temporal_mode === 'LIVE';
   const isHistorical = decisionObj.temporal_mode === 'HISTORICAL';
 
-  const getDecisionTheme = (d: string) => {
-    switch (d.toUpperCase()) {
-      case 'FAVORABLE':
-        return {
-          label: 'FAVORABLE',
-          icon: <CheckCircle2 size={18} color="var(--emerald)" />,
-          colorClass: 'status-high',
-          badgeBg: 'rgba(16, 185, 129, 0.15)',
-          badgeBorder: 'rgba(16, 185, 129, 0.4)',
-          textColor: 'var(--emerald)',
-        };
-      case 'CAUTION':
-        return {
-          label: 'CAUTION',
-          icon: <AlertTriangle size={18} color="var(--amber)" />,
-          colorClass: 'status-moderate',
-          badgeBg: 'rgba(245, 158, 11, 0.15)',
-          badgeBorder: 'rgba(245, 158, 11, 0.4)',
-          textColor: 'var(--amber)',
-        };
-      case 'NOT_RECOMMENDED':
-        return {
-          label: 'NOT RECOMMENDED',
-          icon: <XCircle size={18} color="var(--rose)" />,
-          colorClass: 'status-low',
-          badgeBg: 'rgba(244, 63, 94, 0.15)',
-          badgeBorder: 'rgba(244, 63, 94, 0.4)',
-          textColor: 'var(--rose)',
-        };
-      default:
-        return {
-          label: 'INSUFFICIENT DATA',
-          icon: <HelpCircle size={18} color="var(--text-muted)" />,
-          colorClass: 'status-insufficient',
-          badgeBg: 'rgba(148, 163, 184, 0.12)',
-          badgeBorder: 'rgba(148, 163, 184, 0.3)',
-          textColor: 'var(--text-muted)',
-        };
-    }
-  };
-
-  const theme = getDecisionTheme(decision);
-
   return (
-    <div className="result-card animate-fade-in" style={{ border: `1px solid ${theme.badgeBorder}` }}>
+    <div className="result-card animate-fade-in" id="fishing-decision-card">
       {/* Header */}
       <div className="result-card-header">
         <div className="result-card-title">
-          <Anchor size={16} color="var(--cyan-primary)" />
-          <span style={{ fontWeight: 600 }}>Unified Fishing Decision Recommendation</span>
+          <Anchor size={14} color="var(--accent)" />
+          <span>Fishing Decision</span>
         </div>
         <span className={`temporal-tag ${isLive ? 'live' : isHistorical ? 'cache' : ''}`}>
-          {isLive ? 'Live Marine Synthesis' : isHistorical ? `Historical — ${decisionObj.timestamp || 'Cache'}` : 'Decision Support'}
+          {isLive ? 'Live Synthesis' : isHistorical ? `Historical` : 'Decision'}
         </span>
       </div>
 
       <div className="result-card-body">
-        {/* Primary Decision Banner */}
-        <div 
-          className="metric-highlight-panel" 
-          style={{ 
-            background: theme.badgeBg, 
-            borderColor: theme.badgeBorder,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '14px 18px',
-          }}
-        >
+        {/* Decision Hero with Left Border Accent — Dominant */}
+        <div className={`decision-accent-hero ${cfg.heroClass}`}>
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Aggregate Decision Support Index
+            <div className="decision-accent-label">
+              Fishing Recommendation
             </div>
-            <div className="metric-highlight-value" style={{ color: theme.textColor, fontSize: '26px' }}>
-              {score !== null && score !== undefined ? `${score.toFixed(1)} / 100` : '—'}
+            <div className={`decision-verdict ${cfg.verdictClass}`} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+              {cfg.icon}
+              <span>{cfg.label}</span>
+            </div>
+            {decisionObj.limiting_factor && (
+              <div className="decision-limiting-factor">
+                Limiting factor: <span>{decisionObj.limiting_factor}</span>
+              </div>
+            )}
+          </div>
+          {score !== null && score !== undefined && (
+            <div className="decision-score-block">
+              <div className="decision-score">{score.toFixed(0)}</div>
+              <div className="decision-score-label">Decision Score</div>
+            </div>
+          )}
+        </div>
+
+        {/* 3 Pillars — Single row separated by clean dividers, not three separate bordered tiles */}
+        <div className="metrics-row-divided">
+          <div className="divided-metric-col">
+            <div className="metric-label">
+              <Fish size={10} />
+              Habitat
+            </div>
+            <div className="metric-data sm">{decisionObj.habitat_status || '—'}</div>
+            <div className="metric-sub">
+              {decisionObj.habitat_score != null ? `${decisionObj.habitat_score.toFixed(0)} / 100` : 'Copernicus'}
             </div>
           </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <div 
-              style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 12px', 
-                borderRadius: '8px', 
-                background: 'rgba(15, 23, 42, 0.6)', 
-                border: `1px solid ${theme.badgeBorder}`,
-                fontWeight: 700,
-                fontSize: '14px',
-                color: theme.textColor
-              }}
-            >
-              {theme.icon}
-              <span>{theme.label}</span>
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label">
+              <Wind size={10} />
+              Weather Risk
             </div>
+            <div className="metric-data sm">{decisionObj.weather_risk || '—'}</div>
+            <div className="metric-sub">
+              {decisionObj.weather_score != null ? `${decisionObj.weather_score.toFixed(0)} / 100` : 'Sea state'}
+            </div>
+          </div>
+
+          <div className="metric-divider-line" />
+
+          <div className="divided-metric-col">
+            <div className="metric-label">
+              <Compass size={10} />
+              EEZ Status
+            </div>
+            <div className="metric-data sm">{decisionObj.geofence_status || '—'}</div>
+            <div className="metric-sub">Jurisdiction</div>
           </div>
         </div>
 
-        {/* Metadata Pills */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '12px 0' }}>
-          {decisionObj.limiting_factor && (
-            <span className="source-pill" style={{ background: 'rgba(6, 182, 212, 0.1)', color: 'var(--cyan-primary)', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-              Limiting Factor: {decisionObj.limiting_factor}
-            </span>
-          )}
-          <span className="source-pill">
-            Confidence: {decisionObj.confidence}
+        {/* Expandable: Reasons + Warnings + Narratives */}
+        <button
+          className="spatial-expand-btn"
+          onClick={() => setShowDetails(!showDetails)}
+          aria-expanded={showDetails}
+          id="decision-expand-details"
+        >
+          <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>
+            {showDetails ? 'Hide details' : 'View decision factors'}
           </span>
-          {decisionObj.data_sources && decisionObj.data_sources.length > 0 && (
-            <span className="source-pill" style={{ color: 'var(--text-muted)' }}>
-              Sources: {decisionObj.data_sources.join(', ')}
-            </span>
-          )}
-        </div>
+          {showDetails ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
 
-        {/* Pillar Breakdown Grid */}
-        <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
-          {/* Habitat Pillar */}
-          <div className="metric-item">
-            <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Fish size={12} color="var(--cyan-primary)" />
-              <span>Habitat Potential</span>
-            </div>
-            <div className="metric-data" style={{ fontSize: '13px' }}>
-              {decisionObj.habitat_status || '—'}
-              {decisionObj.habitat_score !== null && decisionObj.habitat_score !== undefined && (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>
-                  ({decisionObj.habitat_score.toFixed(0)})
-                </span>
-              )}
-            </div>
-          </div>
+        {showDetails && (
+          <div className="animate-fade-in" style={{ marginTop: 10 }}>
+            {/* Reasons */}
+            {decisionObj.reasons && decisionObj.reasons.length > 0 && (
+              <div className="card-section">
+                <div className="card-section-label">Decision Factors</div>
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {decisionObj.reasons.map((r, i) => (
+                    <li key={i} style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {/* Weather Pillar */}
-          <div className="metric-item">
-            <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Wind size={12} color="var(--amber)" />
-              <span>Weather Risk</span>
-            </div>
-            <div className="metric-data" style={{ fontSize: '13px' }}>
-              {decisionObj.weather_risk || '—'}
-              {decisionObj.weather_score !== null && decisionObj.weather_score !== undefined && (
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>
-                  ({decisionObj.weather_score.toFixed(0)})
-                </span>
-              )}
-            </div>
-          </div>
+            {/* Warnings */}
+            {decisionObj.warnings && decisionObj.warnings.length > 0 && (
+              <div className="card-section">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <AlertCircle size={12} color="var(--warning)" />
+                  <div className="card-section-label" style={{ color: 'var(--warning)', marginBottom: 0 }}>
+                    Safety Advisories
+                  </div>
+                </div>
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {decisionObj.warnings.map((w, i) => (
+                    <li key={i} style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.45 }}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-          {/* Geofence Pillar */}
-          <div className="metric-item">
-            <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Compass size={12} color="var(--emerald)" />
-              <span>EEZ Status</span>
-            </div>
-            <div className="metric-data" style={{ fontSize: '13px' }}>
-              {decisionObj.geofence_status || '—'}
-            </div>
-          </div>
-        </div>
+            {/* Narratives */}
+            {(data.narrative || data.advice) && (
+              <div className="card-section card-narrative-section" style={{ border: 'none', paddingTop: 0 }}>
+                {data.narrative && (
+                  <div className="narrative-item scientific">
+                    {data.narrative}
+                  </div>
+                )}
+                {data.advice && (
+                  <div className="narrative-item advice">
+                    {data.advice}
+                  </div>
+                )}
+              </div>
+            )}
 
-        {/* Why / Justification Section */}
-        {decisionObj.reasons && decisionObj.reasons.length > 0 && (
-          <div style={{ margin: '12px 0 10px', padding: '10px 14px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
-              Decision Factors & Rationale
+            <div className="disclaimer-text" style={{ marginTop: 8 }}>
+              {data.disclaimer || 'Prototype decision-support indicator. Does not guarantee fish abundance, catch success, or vessel safety.'}
             </div>
-            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12.5px', color: 'var(--text-normal)', lineHeight: 1.5 }}>
-              {decisionObj.reasons.map((r, i) => (
-                <li key={i} style={{ marginBottom: '3px' }}>{r}</li>
-              ))}
-            </ul>
           </div>
         )}
 
-        {/* Warnings / Advisories Section */}
-        {decisionObj.warnings && decisionObj.warnings.length > 0 && (
-          <div style={{ margin: '10px 0', padding: '10px 14px', background: 'rgba(245, 158, 11, 0.08)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.25)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600, color: 'var(--amber)', textTransform: 'uppercase', marginBottom: '4px' }}>
-              <AlertCircle size={13} />
-              <span>Operational & Safety Advisories</span>
-            </div>
-            <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px', color: 'var(--text-normal)', lineHeight: 1.45 }}>
-              {decisionObj.warnings.map((w, i) => (
-                <li key={i} style={{ marginBottom: '2px' }}>{w}</li>
-              ))}
-            </ul>
+        {/* Data source */}
+        {decisionObj.data_sources && decisionObj.data_sources.length > 0 && (
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10 }}>
+            {decisionObj.data_sources.map((src, i) => (
+              <span key={i} className="source-pill">{src}</span>
+            ))}
           </div>
         )}
-
-        {/* Natural Language Narratives */}
-        <div className="card-narrative-section">
-          {data.narrative && (
-            <div className="narrative-item scientific">
-              <strong>Assessment:</strong> {data.narrative}
-            </div>
-          )}
-
-          {data.advice && (
-            <div className="narrative-item advice">
-              <strong>Fisherman Guidance:</strong> {data.advice}
-            </div>
-          )}
-
-          <div className="disclaimer-text">
-            {data.disclaimer || 'Prototype decision-support indicator based on available environmental observations. Does not guarantee fish abundance, catch success, or vessel safety.'}
-          </div>
-        </div>
       </div>
     </div>
   );

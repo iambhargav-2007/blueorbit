@@ -54,3 +54,13 @@ def get_weather_provider(live_mode: Optional[bool] = None, **kwargs) -> BaseWeat
     if is_live:
         return InterimLiveWeatherProvider(**kwargs)
     return CacheWeatherProvider(**kwargs)
+
+from .base_cyclone_provider import BaseCycloneProvider
+from .placeholder_cyclone_provider import PlaceholderCycloneProvider
+
+def get_cyclone_provider(**kwargs) -> BaseCycloneProvider:
+    """
+    Factory function to instantiate the cyclone provider.
+    Currently always returns the PlaceholderCycloneProvider as official IMD integration is pending.
+    """
+    return PlaceholderCycloneProvider(**kwargs)

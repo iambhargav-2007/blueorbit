@@ -17,6 +17,7 @@ interface MarineMapProps {
   onFitEezReady?: (fitFn: () => void) => void;
   onResetViewReady?: (resetFn: () => void) => void;
   onLayerLoadingChange?: (loading: boolean) => void;
+  showLiveVessels?: boolean;
 }
 
 export const MarineMap: React.FC<MarineMapProps> = ({
@@ -31,14 +32,17 @@ export const MarineMap: React.FC<MarineMapProps> = ({
   onFitEezReady,
   onResetViewReady,
   onLayerLoadingChange,
+  showLiveVessels = false,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const eezLayerRef = useRef<L.GeoJSON | null>(null);
   const gridLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const vesselLayerGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [eezGeoJson, setEezGeoJson] = useState<any>(null);
+  const [vessels, setVessels] = useState<any[]>([]);
 
   // 1. Initialize Leaflet Map
   useEffect(() => {
@@ -53,13 +57,23 @@ export const MarineMap: React.FC<MarineMapProps> = ({
       minZoom: 4,
       maxZoom: 13,
       zoomControl: false, // We'll add custom positioned controls
+      dragging: true,
+      touchZoom: true,
+      scrollWheelZoom: true,
     });
 
-    // Dark sleek maritime basemap (CartoDB Dark Matter)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap | Blue Orbit Maritime',
-      subdomains: 'abcd',
-      maxZoom: 19,
+    // Light Gray Base Layer
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; Esri &mdash; Blue Orbit Maritime Intelligence',
+      maxZoom: 16,
+      className: 'light-marine-tiles',
+    }).addTo(map);
+
+    // Light Gray Reference Labels
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      className: 'light-marine-labels',
+      pane: 'shadowPane',
     }).addTo(map);
 
     // Reposition zoom control to top-right
@@ -69,7 +83,11 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     const gridGroup = L.layerGroup().addTo(map);
     gridLayerGroupRef.current = gridGroup;
 
-    // Custom maritime pulsing marker icon
+    // Layer group for live vessels
+    const vesselGroup = L.layerGroup().addTo(map);
+    vesselLayerGroupRef.current = vesselGroup;
+
+    // Custom maritime marker icon — clean dot with subtle ring
     const marineIcon = L.divIcon({
       className: 'custom-marine-marker',
       html: `
@@ -78,8 +96,8 @@ export const MarineMap: React.FC<MarineMapProps> = ({
           <div class="marker-center-dot"></div>
         </div>
       `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
     });
 
     // Marker
@@ -144,19 +162,15 @@ export const MarineMap: React.FC<MarineMapProps> = ({
         }
 
         const eezLayer = L.geoJSON(data, {
+          interactive: false,
           style: {
-            color: '#06B6D4',
-            weight: 1.8,
-            dashArray: '6, 6',
-            fillColor: '#06B6D4',
-            fillOpacity: 0.04,
-            opacity: 0.85,
-          },
-          onEachFeature: (feature, layer) => {
-            layer.bindTooltip('Indian Exclusive Economic Zone (EEZ)', {
-              sticky: true,
-              className: 'custom-marine-tooltip',
-            });
+            color: '#9C6B3E', // --accent
+            weight: 2,
+            dashArray: '5, 5',
+            fillColor: 'transparent',
+            fillOpacity: 0,
+            opacity: 1,
+            interactive: false,
           },
         });
 
@@ -229,6 +243,12 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     let isMounted = true;
     if (onLayerLoadingChange) onLayerLoadingChange(true);
 
+    // Cyclone layer not rendered via grid tiles
+    if (activeLayer === 'cyclone') {
+      if (onLayerLoadingChange) onLayerLoadingChange(false);
+      return;
+    }
+
     fetchGridLayer(activeLayer, observationDate, 3)
       .then((gridData) => {
         if (!isMounted || !mapInstanceRef.current || !gridLayerGroupRef.current) return;
@@ -295,6 +315,99 @@ export const MarineMap: React.FC<MarineMapProps> = ({
       isMounted = false;
     };
   }, [activeLayer, observationDate, onSelectCoordinates]);
+
+  // 6. Live Vessel Polling and Rendering
+  useEffect(() => {
+    let intervalId: any;
+    
+    const fetchVessels = async () => {
+      try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+        const response = await fetch(`${API_BASE}/api/v1/vessels/`);
+        let data = await response.json();
+        
+        if (Array.isArray(data)) {
+          // Prevent React/Leaflet crash by limiting to 500 markers max globally
+          data = data.slice(0, 500);
+          const vesselCount = data.length;
+          console.log(`[AIS DEBUG]\nAPI COUNT: ${vesselCount}\nSTATE COUNT: ${vessels.length}`);
+          
+          if (vesselCount > 0) {
+            const first = data[0];
+            console.log(`[AIS DEBUG] FIRST VESSEL:\n  MMSI: ${first.mmsi}\n  LAT: ${first.latitude}\n  LON: ${first.longitude}`);
+          }
+          setVessels(data);
+        } else {
+          console.error('[AIS DEBUG] API returned non-array payload:', data);
+          setVessels([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch live vessels:', err);
+      }
+    };
+
+    if (showLiveVessels) {
+      fetchVessels();
+      intervalId = setInterval(fetchVessels, 15000);
+    } else {
+      setVessels([]);
+      if (vesselLayerGroupRef.current) {
+        vesselLayerGroupRef.current.clearLayers();
+      }
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [showLiveVessels]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const vesselGroup = vesselLayerGroupRef.current;
+    if (!map || !vesselGroup) return;
+
+    vesselGroup.clearLayers();
+    
+    if (vessels.length === 0) return;
+
+    // Basic vessel icon for debugging/rendering
+    const vesselIcon = L.divIcon({
+      className: 'custom-vessel-marker',
+      html: `
+        <div style="background-color: #9C6B3E; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; z-index: 1000;"></div>
+      `,
+      iconSize: [12, 12],
+      iconAnchor: [6, 6],
+    });
+
+    let validCount = 0;
+
+    vessels.forEach((v) => {
+      if (typeof v.latitude === 'number' && typeof v.longitude === 'number') {
+        validCount++;
+        console.log(`[AIS MARKER DEBUG]\nMMSI: ${v.mmsi}\nLAT: ${v.latitude}\nLON: ${v.longitude}`);
+        
+        const marker = L.marker([v.latitude, v.longitude], {
+          icon: vesselIcon,
+          zIndexOffset: 2000, // Ensure it floats above
+        });
+        
+        marker.bindPopup(`
+          <div style="font-family: inherit; font-size: 11px;">
+            <strong>MMSI:</strong> ${v.mmsi}<br/>
+            <strong>Name:</strong> ${v.vessel_name || 'N/A'}<br/>
+            <strong>Speed:</strong> ${v.speed_over_ground || 'N/A'}<br/>
+            <strong>Status:</strong> ${v.data_status}<br/>
+          </div>
+        `);
+        
+        vesselGroup.addLayer(marker);
+      }
+    });
+    
+    console.log(`[AIS DEBUG] VALID COUNT: ${validCount}`);
+
+  }, [vessels]);
 
   return (
     <div className="marine-map-wrapper">

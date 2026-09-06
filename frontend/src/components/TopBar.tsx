@@ -1,5 +1,5 @@
 import React from 'react';
-import { Orbit, Activity, Menu, RefreshCw, Compass, MessageSquare } from 'lucide-react';
+import { Orbit, Menu, RefreshCw, Compass, MessageSquare } from 'lucide-react';
 
 interface TopBarProps {
   isBackendHealthy: boolean;
@@ -20,19 +20,19 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   return (
     <header className="top-bar">
+      {/* Left — Brand */}
       <div className="top-bar-left">
         <button
           className="btn-icon mobile-only"
           onClick={onToggleSidebar}
           aria-label="Toggle Sidebar"
-          title="Toggle Sidebar"
         >
-          <Menu size={18} />
+          <Menu size={16} />
         </button>
 
-        <div className="brand-wrapper" onClick={() => onChangeView('map')} style={{ cursor: 'pointer' }}>
+        <div className="brand-wrapper" onClick={() => onChangeView('map')}>
           <div className="brand-icon">
-            <Orbit size={18} />
+            <Orbit size={14} />
           </div>
           <div className="brand-title">
             BLUE ORBIT
@@ -41,40 +41,45 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
       </div>
 
-      {/* Center View Mode Switcher */}
+      {/* Center — View switcher */}
       <div className="view-mode-tabs">
         <button
+          id="tab-spatial-map"
           className={`view-mode-tab ${activeView === 'map' ? 'active' : ''}`}
           onClick={() => onChangeView('map')}
+          aria-label="Spatial Map"
         >
-          <Compass size={14} />
+          <Compass size={13} />
           <span>Spatial Map</span>
         </button>
         <button
+          id="tab-decision-assistant"
           className={`view-mode-tab ${activeView === 'chat' ? 'active' : ''}`}
           onClick={() => onChangeView('chat')}
+          aria-label="Decision Assistant"
         >
-          <MessageSquare size={14} />
+          <MessageSquare size={13} />
           <span>Decision Assistant</span>
         </button>
       </div>
 
+      {/* Right — Status */}
       <div className="top-bar-right">
         <div
           className="backend-indicator"
-          title="FastAPI Backend Status (http://localhost:8000)"
+          title="FastAPI Backend — http://localhost:8000"
+          aria-live="polite"
         >
-          <span className={`backend-dot ${isBackendHealthy ? '' : 'offline'}`} />
-          <span>{isBackendHealthy ? 'Backend Active' : 'Backend Offline'}</span>
+          <span className={`backend-dot ${isBackendHealthy ? '' : 'offline'}`} aria-hidden="true" />
+          <span>{isBackendHealthy ? 'Backend Active' : 'Offline'}</span>
           <button
             onClick={onRefreshHealth}
             className="btn-icon"
-            style={{ padding: '2px', marginLeft: '4px' }}
+            style={{ width: 20, height: 20, marginLeft: 2 }}
             disabled={isCheckingHealth}
-            aria-label="Re-check Backend Connection"
-            title="Re-check Backend Connection"
+            aria-label="Retry backend connection"
           >
-            <RefreshCw size={12} className={isCheckingHealth ? 'animate-spin' : ''} />
+            <RefreshCw size={11} className={isCheckingHealth ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
