@@ -108,6 +108,52 @@
   --transition-normal: var(--t-normal);
   --font-sans: var(--font);
   --shadow-glow: none;
+
+  /* Theme-specific gradient and blur variables */
+  --bg-blur-strong: rgba(250, 246, 239, 0.95);
+  --bg-gradient-0: rgba(250, 246, 239, 1);
+  --bg-gradient-65: rgba(250, 246, 239, 0.94);
+  --bg-gradient-100: rgba(250, 246, 239, 0);
+}
+
+.dark {
+  /* Midnight Navy + Platinum Palette (Option H) */
+  --bg-page:              #0A0D14;
+  --bg-surface:           #10131C;
+  --bg-surface-elevated:  #161A26;
+  --border-default:       #1D2230;
+  --border-strong:        #2A3040;
+  --text-primary:         #E9ECF2;
+  --text-secondary:       #A6ABBC;
+  --text-muted:           #5C6478;
+  --accent:               #C2C6D6;
+  
+  --success:              #7FAE9A;
+  --warning:              #C9AE6B;
+  --danger:               #D98A8A;
+
+  --bg-hover:             rgba(255, 255, 255, 0.035);
+  --bg-active:            rgba(255, 255, 255, 0.06);
+  --neutral-dim:          rgba(255, 255, 255, 0.03);
+
+  --accent-dim:           rgba(194, 198, 214, 0.08);
+  --accent-border:        rgba(194, 198, 214, 0.22);
+  --success-dim:          rgba(127, 174, 154, 0.08);
+  --success-border:       rgba(127, 174, 154, 0.2);
+  --warning-dim:          rgba(201, 174, 107, 0.08);
+  --warning-border:       rgba(201, 174, 107, 0.2);
+  --danger-dim:           rgba(217, 138, 138, 0.08);
+  --danger-border:        rgba(217, 138, 138, 0.2);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-xl: 0 12px 32px rgba(0,0,0,0.6);
+
+  --bg-blur-strong: rgba(10, 13, 20, 0.95);
+  --bg-gradient-0: rgba(10, 13, 20, 1);
+  --bg-gradient-65: rgba(10, 13, 20, 0.94);
+  --bg-gradient-100: rgba(10, 13, 20, 0);
 }
 
 /* ─── Reset ───────────────────────────────────────────────────────────── */
@@ -291,7 +337,7 @@ button { cursor: pointer; }
   justify-content: space-between;
   height: 52px;
   padding: 0 16px;
-  background: rgba(250, 246, 239, 0.95);
+  background: var(--bg-blur-strong);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-default);
   z-index: 20;
@@ -559,9 +605,9 @@ button { cursor: pointer; }
   align-items: center;
   padding: 12px 20px 24px;
   background: linear-gradient(to top,
-    rgba(250, 246, 239, 1) 0%,
-    rgba(250, 246, 239, 0.94) 65%,
-    rgba(250, 246, 239, 0) 100%);
+    var(--bg-gradient-0) 0%,
+    var(--bg-gradient-65) 65%,
+    var(--bg-gradient-100) 100%);
   pointer-events: none;
   z-index: 10;
 }

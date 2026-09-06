@@ -239,6 +239,7 @@ export interface CoordinatorResponse {
   fishing_decision?: FishingDecisionAgentResponse | null;
   research?: ResearchAgentResponse | null;
   comparison?: ComparisonResult | null;
+  routing_navigation?: RoutingAgentResponse | null;
   safety_assessment?: Record<string, any> | null;
   sector_overview?: Record<string, any> | null;
   structured_summary?: StructuredSummary | null;
@@ -345,4 +346,41 @@ export interface SessionRecord {
   location?: { lat: number; lon: number } | null;
   locationContext?: LocationContext | null;
   dateStr?: string | null;
+}
+
+export interface RouteNode {
+  latitude: number;
+  longitude: number;
+  distance_from_start_km: number;
+  weather_state?: string | null;
+  wave_state?: string | null;
+  geofence_state?: string | null;
+  hazard_state?: string | null;
+  traversal_cost: number;
+}
+
+export interface RoutingResult {
+  status: string;
+  start_location: LocationInfo;
+  destination_location: LocationInfo;
+  route_points: RouteNode[];
+  total_distance_km: number;
+  estimated_route_cost: number;
+  weather_assessment?: string | null;
+  geofence_assessment?: string | null;
+  hazard_summary?: string | null;
+  data_status: string;
+  temporal_mode: string;
+  data_sources: string[];
+  generated_at?: string | null;
+  warnings: string[];
+  explanation_metadata?: Record<string, any> | null;
+}
+
+export interface RoutingAgentResponse {
+  success: boolean;
+  routing?: RoutingResult | null;
+  narrative?: string | null;
+  disclaimer: string;
+  error?: string | null;
 }

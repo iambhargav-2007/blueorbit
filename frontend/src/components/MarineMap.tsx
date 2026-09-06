@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { LocationContext } from '../types/api';
 import { fetchEezGeoJson, fetchGridLayer } from '../services/spatialApi';
 import { SpatialLayerType } from './spatial/LayerControlPanel';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MarineMapProps {
   initialLat?: number;
@@ -18,6 +19,7 @@ interface MarineMapProps {
   onResetViewReady?: (resetFn: () => void) => void;
   onLayerLoadingChange?: (loading: boolean) => void;
   showLiveVessels?: boolean;
+  routePoints?: {latitude: number, longitude: number, hazard_state?: string | null}[] | null;
 }
 
 export const MarineMap: React.FC<MarineMapProps> = ({
@@ -33,6 +35,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
   onResetViewReady,
   onLayerLoadingChange,
   showLiveVessels = false,
+  routePoints,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -40,6 +43,11 @@ export const MarineMap: React.FC<MarineMapProps> = ({
   const eezLayerRef = useRef<L.GeoJSON | null>(null);
   const gridLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const vesselLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  const routeLayerGroupRef = useRef<L.LayerGroup | null>(null);
+  
+  const baseLayerRef = useRef<L.TileLayer | null>(null);
+  const labelLayerRef = useRef<L.TileLayer | null>(null);
+  const { theme } = useTheme();
 
   const [eezGeoJson, setEezGeoJson] = useState<any>(null);
   const [vessels, setVessels] = useState<any[]>([]);
@@ -62,17 +70,23 @@ export const MarineMap: React.FC<MarineMapProps> = ({
       scrollWheelZoom: true,
     });
 
-    // Light Gray Base Layer
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    // Base Layer
+    const baseLayerUrl = theme === 'dark'
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+      
+    baseLayerRef.current = L.tileLayer(baseLayerUrl, {
       attribution: '&copy; Esri &mdash; Blue Orbit Maritime Intelligence',
       maxZoom: 16,
-      className: 'light-marine-tiles',
     }).addTo(map);
 
-    // Light Gray Reference Labels
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    // Reference Labels
+    const labelLayerUrl = theme === 'dark'
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+      : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}';
+      
+    labelLayerRef.current = L.tileLayer(labelLayerUrl, {
       maxZoom: 16,
-      className: 'light-marine-labels',
       pane: 'shadowPane',
     }).addTo(map);
 
@@ -86,6 +100,10 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     // Layer group for live vessels
     const vesselGroup = L.layerGroup().addTo(map);
     vesselLayerGroupRef.current = vesselGroup;
+
+    // Layer group for route
+    const routeGroup = L.layerGroup().addTo(map);
+    routeLayerGroupRef.current = routeGroup;
 
     // Custom maritime marker icon — clean dot with subtle ring
     const marineIcon = L.divIcon({
@@ -145,6 +163,24 @@ export const MarineMap: React.FC<MarineMapProps> = ({
       gridLayerGroupRef.current = null;
     };
   }, []);
+
+  // 1.5 Dynamic Theme Swap for Map Tiles
+  useEffect(() => {
+    if (baseLayerRef.current) {
+      baseLayerRef.current.setUrl(
+        theme === 'dark'
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
+      );
+    }
+    if (labelLayerRef.current) {
+      labelLayerRef.current.setUrl(
+        theme === 'dark'
+          ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+          : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}'
+      );
+    }
+  }, [theme]);
 
   // 2. Fetch & Render Real EEZ GeoJSON
   useEffect(() => {
@@ -408,6 +444,49 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     console.log(`[AIS DEBUG] VALID COUNT: ${validCount}`);
 
   }, [vessels]);
+
+  // 7. Route Rendering
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const routeGroup = routeLayerGroupRef.current;
+    if (!map || !routeGroup) return;
+
+    routeGroup.clearLayers();
+
+    if (!routePoints || routePoints.length < 2) return;
+
+    const latlngs = routePoints.map((pt) => [pt.latitude, pt.longitude] as [number, number]);
+
+    // Draw main polyline
+    const polyline = L.polyline(latlngs, {
+      color: '#3B82F6', // Blue route
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '10, 10',
+      lineJoin: 'round',
+    });
+    
+    routeGroup.addLayer(polyline);
+
+    // Draw hazard points if any
+    routePoints.forEach((pt) => {
+      if (pt.hazard_state && pt.hazard_state !== 'SAFE') {
+        const circle = L.circleMarker([pt.latitude, pt.longitude], {
+          radius: 4,
+          fillColor: pt.hazard_state === 'BLOCKED' ? '#EF4444' : '#F59E0B',
+          color: pt.hazard_state === 'BLOCKED' ? '#EF4444' : '#F59E0B',
+          weight: 1,
+          opacity: 0.9,
+          fillOpacity: 1
+        });
+        routeGroup.addLayer(circle);
+      }
+    });
+
+    // Fit bounds to route
+    map.fitBounds(polyline.getBounds(), { padding: [40, 40], animate: true });
+
+  }, [routePoints]);
 
   return (
     <div className="marine-map-wrapper">

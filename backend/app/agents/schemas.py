@@ -560,3 +560,47 @@ class ResearchAgentResponse(BaseModel):
     )
     provenance: ResearchProvenance
     error: Optional[str] = None
+
+# ---------------------------------------------------------------------------
+# Routing & Navigation Agent schemas
+# ---------------------------------------------------------------------------
+
+class RouteNode(BaseModel):
+    latitude: float
+    longitude: float
+    distance_from_start_km: float = 0.0
+    weather_state: Optional[str] = None
+    wave_state: Optional[str] = None
+    geofence_state: Optional[str] = None
+    hazard_state: Optional[str] = None
+    traversal_cost: float = 0.0
+
+class RoutingResult(BaseModel):
+    status: str = "SUCCESS"
+    start_location: LocationInfo
+    destination_location: LocationInfo
+    route_points: List[RouteNode] = Field(default_factory=list)
+    total_distance_km: float = 0.0
+    estimated_route_cost: float = 0.0
+    weather_assessment: Optional[str] = None
+    geofence_assessment: Optional[str] = None
+    hazard_summary: Optional[str] = None
+    data_status: str = "COMPLETE"
+    temporal_mode: str = "LIVE"
+    data_sources: List[str] = Field(default_factory=list)
+    generated_at: Optional[str] = None
+    warnings: List[str] = Field(default_factory=list)
+    explanation_metadata: Optional[Dict[str, Any]] = None
+
+class RoutingAgentResponse(BaseModel):
+    success: bool
+    routing: Optional[RoutingResult] = None
+    narrative: Optional[str] = Field(
+        default=None,
+        description="LLM explanation of the generated route."
+    )
+    disclaimer: str = (
+        "ORCA decision-support route. Not an official maritime navigation route. "
+        "Does not guarantee safety from underwater obstacles or currents."
+    )
+    error: Optional[str] = None

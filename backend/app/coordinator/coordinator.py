@@ -24,6 +24,7 @@ from ..agents.geofencing_agent import GeofencingAgent
 from ..agents.fishing_decision_agent import FishingDecisionAgent
 from ..agents.cyclone_agent import CycloneAgent
 from ..agents.research_agent import ResearchAgent
+from ..agents.routing_agent import RoutingAgent
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ class OrcaCoordinator:
             self._decision_agent = FishingDecisionAgent(llm_client=llm_client, tool=shared_tool)
         self._cyclone_agent = CycloneAgent(client=llm_client, live_mode=live_mode)
         self._research_agent = ResearchAgent()
+        self._routing_agent = RoutingAgent(llm_client=llm_client)
 
     def process_request(
         self,
@@ -155,6 +157,7 @@ class OrcaCoordinator:
         geofencing_res = None
         decision_res = None
         cyclone_res = None
+        routing_res = None
 
         # Execute ONLY capabilities designated by the intent
         if "fishing_decision" in requested_caps and intent == IntentEnum.FISHING_SUPPORT.value:
@@ -264,6 +267,21 @@ class OrcaCoordinator:
                 logger.error(f"Research Agent execution error: {e}")
                 errors.append(f"Research Agent encountered an error: {e}")
 
+        if "routing" in requested_caps or intent == IntentEnum.ROUTING_NAVIGATION.value:
+            agents_invoked.append("routing")
+            try:
+                routing_res = self._routing_agent.run(
+                    query_text=query_text,
+                    latitude=latitude,
+                    longitude=longitude,
+                    date_str=date_str
+                )
+                if not routing_res.success:
+                    errors.append(f"Routing Agent failed: {routing_res.error}")
+            except Exception as e:
+                logger.error(f"Routing Agent execution error: {e}")
+                errors.append(f"Routing Agent encountered an error: {e}")
+
         # 4. Domain-Specific Synthesis (Maritime Safety, Sector Overview, Structured Summary)
         safety_assessment = None
         if intent == IntentEnum.MARITIME_SAFETY.value or "weather" in requested_caps:
@@ -329,6 +347,7 @@ class OrcaCoordinator:
             weather_res and weather_res.success,
             geofencing_res and geofencing_res.success,
             cyclone_res and cyclone_res.success,
+            routing_res and routing_res.success,
         ])
         
         overall_success = any_success or (intent == IntentEnum.GENERAL_COASTAL_QUERY.value)
@@ -377,6 +396,17 @@ class OrcaCoordinator:
                     operational_status="Scientific Research Observation",
                     confidence=habitat_res.confidence or "High",
                 )
+            elif intent == IntentEnum.ROUTING_NAVIGATION.value and routing_res and routing_res.success:
+                dist = f"{routing_res.routing.total_distance_km:.1f} km"
+                structured_summary = StructuredSummary(
+                    overview=routing_res.narrative,
+                    key_findings=[
+                        f"Distance: {dist}",
+                        f"Hazards: {routing_res.routing.hazard_summary}",
+                    ],
+                    operational_status="Route Generated",
+                    confidence="High"
+                )
             else:
                 findings = []
                 if habitat_res and habitat_res.environmental_summary:
@@ -422,6 +452,7 @@ class OrcaCoordinator:
             fishing_decision=decision_res,
             research=research_res,
             comparison=habitat_res.comparison if habitat_res and hasattr(habitat_res, "comparison") else None,
+            routing_navigation=routing_res,
             safety_assessment=safety_assessment,
             sector_overview=sector_overview,
             structured_summary=structured_summary,

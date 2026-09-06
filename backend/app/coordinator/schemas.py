@@ -15,6 +15,7 @@ from ..agents.schemas import (
     GeofencingAgentResponse,
     FishingDecisionAgentResponse,
     ComparisonResult,
+    RoutingAgentResponse,
 )
 
 
@@ -30,6 +31,7 @@ class IntentEnum(str, Enum):
     SPATIAL_QUERY = "SPATIAL_QUERY"
     TEMPORAL_COMPARISON = "TEMPORAL_COMPARISON"
     GENERAL_COASTAL_QUERY = "GENERAL_COASTAL_QUERY"
+    ROUTING_NAVIGATION = "ROUTING_NAVIGATION"
     UNKNOWN = "UNKNOWN"
 
 
@@ -45,6 +47,7 @@ class IntelligenceDomainEnum(str, Enum):
     FISHING = "FISHING"
     MARITIME_SAFETY = "MARITIME_SAFETY"
     COASTAL_OVERVIEW = "COASTAL_OVERVIEW"
+    NAVIGATION = "NAVIGATION"
 
 
 class RoutingInfo(BaseModel):
@@ -140,6 +143,10 @@ class CoordinatorResponse(BaseModel):
     comparison: Optional[ComparisonResult] = Field(
         default=None,
         description="Structured comparison result if request was a comparison."
+    )
+    routing_navigation: Optional[RoutingAgentResponse] = Field(
+        default=None,
+        description="Result from the Routing Agent if routing capability was required."
     )
     
     # --- Specialized Domain Views ---

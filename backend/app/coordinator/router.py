@@ -31,11 +31,12 @@ Possible Intents:
 - 'ENVIRONMENTAL_ANALYSIS': User asks for environmental/habitat suitability indicators without fishing claims.
 - 'SPATIAL_QUERY': User asks about Indian EEZ, borders, or proximity ("Are we in international waters?", "Distance to EEZ").
 - 'TEMPORAL_COMPARISON': User compares marine observations across dates or locations ("Compare SST between Oct 1 and Oct 15").
+- 'ROUTING_NAVIGATION': User wants to find a route from start to destination ("Route me to Goa", "Find a safe route from Mumbai to Ratnagiri").
 - 'GENERAL_COASTAL_QUERY': Broad sector overview inquiries ("What is happening in this area?", "Tell me about this sector").
 - 'UNKNOWN': Ambiguous, greeting, or off-topic questions.
 
 Possible Capabilities:
-'habitat', 'weather', 'geofencing', 'fishing_decision', 'cyclone'.
+'habitat', 'weather', 'geofencing', 'fishing_decision', 'cyclone', 'routing'.
 
 CRITICAL RULE: DO NOT over-call capabilities. Only include what the intent genuinely requires.
 - Cyclone queries require ONLY 'cyclone'.
@@ -241,6 +242,25 @@ class OrcaRouter:
                 ["weather"],
             )
 
+        # H.5 Routing & Navigation Intent
+        routing_patterns = [
+            r"\broute me\b",
+            r"\bfind a route\b",
+            r"\bsafe route\b",
+            r"\bnavigate to\b",
+            r"\bhow can i safely travel\b",
+            r"\bplan a (marine )?route\b",
+            r"\bsafest route\b",
+            r"\bshortest route\b",
+            r"\broute from\b"
+        ]
+        if any(re.search(pat, clean) for pat in routing_patterns):
+            return (
+                IntentEnum.ROUTING_NAVIGATION.value,
+                IntelligenceDomainEnum.NAVIGATION.value,
+                ["routing"],
+            )
+
         # I. General Coastal Query Intent (Sector Overview)
         general_patterns = [
             r"\bwhat is happening (in|at|near|along)\b",
@@ -279,7 +299,7 @@ class OrcaRouter:
                 intent = parsed.get("intent", IntentEnum.UNKNOWN.value)
                 capabilities = parsed.get("requested_capabilities", [])
 
-                valid_caps = {"habitat", "weather", "geofencing", "fishing_decision", "cyclone"}
+                valid_caps = {"habitat", "weather", "geofencing", "fishing_decision", "cyclone", "routing"}
                 caps = [c for c in capabilities if c in valid_caps]
 
                 # Map intent to domain
@@ -291,6 +311,7 @@ class OrcaRouter:
                     IntentEnum.ENVIRONMENTAL_ANALYSIS.value: IntelligenceDomainEnum.MARINE.value,
                     IntentEnum.SPATIAL_QUERY.value: IntelligenceDomainEnum.GEOSPATIAL.value,
                     IntentEnum.TEMPORAL_COMPARISON.value: IntelligenceDomainEnum.TEMPORAL.value,
+                    IntentEnum.ROUTING_NAVIGATION.value: IntelligenceDomainEnum.NAVIGATION.value,
                     IntentEnum.GENERAL_COASTAL_QUERY.value: IntelligenceDomainEnum.COASTAL_OVERVIEW.value,
                 }
                 domain = domain_map.get(intent, IntelligenceDomainEnum.COASTAL_OVERVIEW.value)

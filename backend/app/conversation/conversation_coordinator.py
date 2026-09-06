@@ -263,6 +263,39 @@ class ConversationCoordinator:
         # Step 2 — Determine which capabilities and intent the query requires
         intent, domain, requested_caps = self._coordinator._router.classify_intent(query_text)
 
+        # Step 2.5 — Fallback for generic conversational / out-of-domain queries
+        if intent in {IntentEnum.UNKNOWN.value, "unknown"}:
+            try:
+                llm = getattr(self._coordinator._router, "_llm", None)
+                model = getattr(self._coordinator._router, "_model", "llama3-70b-8192")
+                if llm:
+                    logger.info(f"Session '{session_id}': UNKNOWN intent detected, generating generic fallback response via LLM.")
+                    response = llm.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are Blue Orbit (ORCA), a helpful AI marine intelligence assistant for the Indian West Coast. Briefly and politely answer the user's conversational query. If they ask a non-marine question, answer it concisely but remind them your primary expertise is marine ecology, sea state safety, and Indian EEZ compliance."},
+                            {"role": "user", "content": query_text}
+                        ],
+                        max_tokens=200,
+                        temperature=0.7
+                    )
+                    fallback_msg = response.choices[0].message.content.strip()
+                    return CoordinatorResponse(
+                        success=True,
+                        request={
+                            "query_text": query_text,
+                            "latitude": state.latitude if state else latitude,
+                            "longitude": state.longitude if state else longitude,
+                            "date_str": state.date_str if state else date_str,
+                        },
+                        routing=RoutingInfo(intent=intent, domain=domain, requested_capabilities=[], agents_invoked=[]),
+                        conversation_response=fallback_msg,
+                        errors=[],
+                    )
+            except Exception as e:
+                logger.error(f"Fallback LLM failed: {e}")
+                # Let it fall through to the coordinator's default error handling
+
         # Severe weather queries (cyclones) check basin-wide status and do not strictly require coordinates
         if intent in {IntentEnum.SEVERE_WEATHER.value, "severe_weather", "SEVERE_WEATHER"}:
             needs_coords = False

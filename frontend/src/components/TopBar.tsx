@@ -1,5 +1,6 @@
 import React from 'react';
-import { Orbit, Menu, RefreshCw, Compass, MessageSquare } from 'lucide-react';
+import { Orbit, Menu, RefreshCw, Compass, MessageSquare, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TopBarProps {
   isBackendHealthy: boolean;
@@ -18,6 +19,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   activeView,
   onChangeView,
 }) => {
+  const { theme, toggleTheme } = useTheme();
   return (
     <header className="top-bar">
       {/* Left — Brand */}
@@ -64,7 +66,17 @@ export const TopBar: React.FC<TopBarProps> = ({
       </div>
 
       {/* Right — Status */}
+      {/* Right — Status & Theme */}
       <div className="top-bar-right">
+        <button
+          className="btn-icon"
+          onClick={toggleTheme}
+          style={{ width: 28, height: 28, marginRight: 8, background: 'var(--bg-hover)' }}
+          title="Toggle Light/Dark Mode"
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+        </button>
         <div
           className="backend-indicator"
           title="FastAPI Backend — http://localhost:8000"
