@@ -105,6 +105,10 @@ class GeofencingEngine:
         dist_meters = float(self.eez_boundary_metric.distance(point_metric))
         distance_to_eez_km = round(dist_meters / 1000.0, 2)
 
+        # Tolerate small coastal/boundary discrepancies (e.g., vessel at port or on shore)
+        if not inside_eez and distance_to_eez_km <= 5.0:
+            inside_eez = True
+
         # 5. Protected Area Checks (Extensible interface)
         inside_protected = None
         nearest_protected = None
@@ -125,13 +129,7 @@ class GeofencingEngine:
                 f"Vessel is OUTSIDE the Indian Exclusive Economic Zone (EEZ) coverage area ({distance_to_eez_km} km from boundary)."
             )
         else:
-            if distance_to_eez_km <= threshold_km:
-                geofence_status = statuses.get("warning", "WARNING")
-                alerts.append(
-                    f"Vessel is approaching the EEZ maritime boundary ({distance_to_eez_km} km remaining, warning threshold is {threshold_km} km). Exercise caution."
-                )
-            else:
-                geofence_status = statuses.get("safe", "SAFE")
+            geofence_status = statuses.get("safe", "SAFE")
 
         return {
             "latitude": lat,

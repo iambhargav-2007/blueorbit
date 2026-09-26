@@ -161,7 +161,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             marginTop: 10,
             padding: '12px 14px',
             borderRadius: 8,
-            background: 'rgba(18, 24, 38, 0.75)',
+            background: 'var(--bg-surface-elevated)',
             border: '1px solid var(--border-default)',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -180,19 +180,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 8 }}>
-              <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+              <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Wind</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {coord.safety_assessment.wind_speed_kn != null ? `${coord.safety_assessment.wind_speed_kn.toFixed(1)} kn` : '—'}
                 </div>
               </div>
-              <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+              <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Waves</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {coord.safety_assessment.wave_height_m != null ? `${coord.safety_assessment.wave_height_m.toFixed(1)} m` : '—'}
                 </div>
               </div>
-              <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+              <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>EEZ Compliance</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                   {coord.safety_assessment.eez_compliance || 'Verified'}
@@ -208,7 +208,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             marginTop: 10,
             padding: '12px 14px',
             borderRadius: 8,
-            background: 'rgba(18, 24, 38, 0.75)',
+            background: 'var(--bg-surface-elevated)',
             border: '1px solid var(--border-default)',
           }}>
             <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>
@@ -216,7 +216,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               {coord.sector_overview.marine && (
-                <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Marine Environment</div>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {coord.sector_overview.marine.sst_c != null ? `${coord.sector_overview.marine.sst_c.toFixed(1)}°C SST` : '—'}
@@ -227,7 +227,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 </div>
               )}
               {coord.sector_overview.sea_state && (
-                <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Sea State</div>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {coord.sector_overview.sea_state.risk_level || 'Operational'}
@@ -238,7 +238,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
                 </div>
               )}
               {coord.sector_overview.geospatial && (
-                <div style={{ padding: '6px 8px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: 6 }}>
+                <div style={{ padding: '6px 8px', background: 'var(--bg-hover)', borderRadius: 6 }}>
                   <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Geospatial</div>
                   <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
                     {coord.sector_overview.geospatial.eez_status || 'Indian EEZ'}

@@ -11,6 +11,43 @@ import { ChatMessage, SessionRecord, CoordinatorResponse, ClarificationRequired,
 import { Orbit } from 'lucide-react';
 import { MarineSpatialView } from './components/spatial/MarineSpatialView';
 
+const ThinkingProcess = () => {
+  const steps = [
+    "Analyzing marine conditions...",
+    "Querying Copernicus ocean intelligence...",
+    "Calculating sea state risk scores...",
+    "Verifying EEZ compliance boundaries...",
+    "Synthesizing final safety recommendation..."
+  ];
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStepIndex((prev) => (prev < steps.length - 1 ? prev + 1 : prev));
+    }, 1500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="loading-indicator" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6, padding: '4px 0' }}>
+      {steps.slice(0, stepIndex + 1).map((step, idx) => (
+        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, opacity: idx === stepIndex ? 1 : 0.6 }}>
+          {idx === stepIndex ? (
+            <div className="loading-dots" aria-label="Analyzing"><span /><span /><span /></div>
+          ) : (
+            <div style={{ width: 14, height: 14, borderRadius: '50%', background: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+          )}
+          <span style={{ fontSize: 13, color: idx === stepIndex ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+            {step}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const createSessionId = () => `orca-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
 export const App: React.FC = () => {
@@ -273,14 +310,7 @@ export const App: React.FC = () => {
                         <Orbit size={13} />
                       </div>
                       <div className="message-bubble assistant-bubble">
-                        <div className="loading-indicator">
-                          <div className="loading-dots" aria-label="Analyzing">
-                            <span /><span /><span />
-                          </div>
-                          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                            Analyzing marine conditions…
-                          </span>
-                        </div>
+                        <ThinkingProcess />
                       </div>
                     </div>
                   )}

@@ -78,6 +78,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     baseLayerRef.current = L.tileLayer(baseLayerUrl, {
       attribution: '&copy; Esri &mdash; Blue Orbit Maritime Intelligence',
       maxZoom: 16,
+      className: theme === 'dark' ? 'dark-marine-tiles' : '',
     }).addTo(map);
 
     // Reference Labels
@@ -88,6 +89,7 @@ export const MarineMap: React.FC<MarineMapProps> = ({
     labelLayerRef.current = L.tileLayer(labelLayerUrl, {
       maxZoom: 16,
       pane: 'shadowPane',
+      className: 'marine-labels-tiles',
     }).addTo(map);
 
     // Reposition zoom control to top-right
@@ -172,6 +174,14 @@ export const MarineMap: React.FC<MarineMapProps> = ({
           ? 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
           : 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}'
       );
+      const container = baseLayerRef.current.getContainer();
+      if (container) {
+        if (theme === 'dark') {
+          container.classList.add('dark-marine-tiles');
+        } else {
+          container.classList.remove('dark-marine-tiles');
+        }
+      }
     }
     if (labelLayerRef.current) {
       labelLayerRef.current.setUrl(

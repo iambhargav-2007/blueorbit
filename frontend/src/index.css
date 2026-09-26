@@ -1209,7 +1209,7 @@ button { cursor: pointer; }
   height: 100%;
   flex: 1;
   overflow: hidden;
-  background: #060E14;
+  background: var(--bg-base);
 }
 
 /* Map canvas */
@@ -1222,7 +1222,7 @@ button { cursor: pointer; }
 .marine-map-canvas {
   width: 100%;
   height: 100%;
-  background: #060E14;
+  background: var(--bg-base);
   cursor: grab !important;
 }
 
