@@ -63,47 +63,18 @@ async def transcribe_audio(
             "prompt": "Mumbai, Gujarat, Goa, Kochi, Mangalore, weather, forecast, sea state, fishing, cyclone, marine conditions."
         }
         
-        is_regional = language and language not in ["auto", "en", "english"]
+        if language and language != "auto":
+            transcription_kwargs["language"] = language
+            # Remove English prompt for non-English languages to prevent Whisper hallucinations
+            if language not in ["en", "english"]:
+                transcription_kwargs.pop("prompt", None)
         
-        if is_regional:
-            logger.info(f"Sending audio to Groq Whisper Translations API for accurate base text")
-            transcript_en = client.audio.translations.create(**transcription_kwargs)
-            english_text = transcript_en.text.strip()
-            
-            logger.info(f"Groq Translation Result: {english_text}")
-            
-            lang_name_map = {"te": "Telugu", "hi": "Hindi", "mr": "Marathi", "gu": "Gujarati", "ta": "Tamil"}
-            lang_name = lang_name_map.get(language, language)
-            
-            try:
-                logger.info(f"Translating back to {lang_name} for UI display")
-                system_prompt = f"You are a professional translator. Translate the given English text to {lang_name}. You must output ONLY the {lang_name} script. Do not output English. Do not output quotes."
-                res = client.chat.completions.create(
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": english_text}
-                    ],
-                    model="qwen/qwen3.8-27b",
-                    temperature=0.0,
-                    max_tokens=100
-                )
-                final_text = res.choices[0].message.content.strip()
-                detected_lang = language
-                logger.info(f"Final Back-Translated Native Text: {final_text}")
-            except Exception as e:
-                logger.error(f"Back-translation failed: {e}")
-                final_text = english_text
-                detected_lang = "en"
-        else:
-            if language and language != "auto":
-                transcription_kwargs["language"] = language
-            
-            logger.info(f"Sending audio to Groq Whisper Transcriptions API (language={language})")
-            transcript = client.audio.transcriptions.create(**transcription_kwargs)
-            final_text = transcript.text.strip()
-            detected_lang = getattr(transcript, "language", language or "en")
-            logger.info(f"Groq Transcription Result: {final_text} (Detected Lang: {detected_lang})")
-            
+        logger.info(f"Sending audio to Groq Whisper Transcriptions API (language={language})")
+        transcript = client.audio.transcriptions.create(**transcription_kwargs)
+        final_text = transcript.text.strip()
+        detected_lang = getattr(transcript, "language", language or "en")
+        logger.info(f"Groq Transcription Result: {final_text} (Detected Lang: {detected_lang})")
+        
         return {"transcript": final_text, "language": detected_lang}
         
     except HTTPException as he:
