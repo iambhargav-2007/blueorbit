@@ -2182,10 +2182,19 @@ button { cursor: pointer; }
 }
 
 @media (max-width: 768px) {
+  /* TopBar Layout Fixes */
+  .top-bar-left, .top-bar-right { min-width: auto; }
+  .backend-indicator span:last-child { display: none; }
+  .brand-title { display: none; }
   .view-mode-tabs span { display: none; }
-  .view-mode-tab { padding: 5px 10px; }
+  .view-mode-tab { padding: 6px 12px; }
+  
+  /* Message & Chat Adjustments */
   .messages-wrapper { padding: 0 12px 180px; }
   .starters-grid { grid-template-columns: 1fr; }
+  .message-bubble { max-width: 90%; }
+  
+  /* Map & Floating Panels */
   .spatial-layers-panel { bottom: 12px; left: 12px; width: 230px; }
   .spatial-floating-panel {
     top: auto;
@@ -2194,17 +2203,29 @@ button { cursor: pointer; }
     max-width: 100%;
     max-height: 60vh;
     border-radius: var(--r-xl) var(--r-xl) 0 0;
+    z-index: 50;
   }
-  .spatial-top-bar { top: 8px; gap: 6px; }
+  .spatial-top-bar { top: 8px; gap: 6px; flex-wrap: wrap; }
   .metrics-grid { grid-template-columns: repeat(2, 1fr); }
   .metrics-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+  
+  /* General Layout Utilities for Flex Wrap */
+  .marine-card-row, .assessment-grid { flex-direction: column; }
+  .geofence-status-row { flex-wrap: wrap; }
 }
 
 @media (max-width: 480px) {
-  .top-bar { padding: 0 10px; height: 48px; }
-  .brand-title { font-size: 13px; }
+  .top-bar { padding: 0 8px; height: 50px; }
   .brand-badge { display: none; }
-  .composer-dock { padding: 10px 12px 20px; }
-  .welcome-heading { font-size: 20px; }
+  
+  .composer-dock { padding: 8px 10px 16px; }
+  .composer-box { border-radius: var(--r-lg); }
+  .composer-input-area { padding: 8px; }
+  
+  .welcome-heading { font-size: 22px; }
+  .welcome-container { padding: 32px 16px 200px; }
+  
   .spatial-top-pill { display: none; }
+  .message-row { gap: 8px; }
+  .user-bubble { font-size: 13.5px; padding: 8px 12px; }
 }

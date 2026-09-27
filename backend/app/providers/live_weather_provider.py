@@ -48,10 +48,20 @@ class InterimLiveWeatherProvider(BaseWeatherProvider):
         self._cache: Dict[Tuple[float, float], Tuple[float, Dict[str, Any]]] = {}
 
     def _fetch_url_json(self, url: str) -> Optional[Dict[str, Any]]:
-        req = urllib.request.Request(url, headers={"User-Agent": HTTP_USER_AGENT})
-        with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
-            if resp.status == 200:
-                return json.loads(resp.read().decode("utf-8"))
+        try:
+            import requests
+            headers = {"User-Agent": HTTP_USER_AGENT}
+            resp = requests.get(url, headers=headers, timeout=self.timeout_seconds)
+            if resp.status_code == 200:
+                return resp.json()
+        except ImportError:
+            req = urllib.request.Request(url, headers={"User-Agent": HTTP_USER_AGENT})
+            with urllib.request.urlopen(req, timeout=self.timeout_seconds) as resp:
+                if resp.status == 200:
+                    return json.loads(resp.read().decode("utf-8"))
+        except Exception as e:
+            logger.error(f"Error fetching {url}: {e}")
+            raise e
         return None
 
     def get_weather(self, lat: float, lon: float, date_str: str) -> Dict[str, Any]:
@@ -111,8 +121,11 @@ class InterimLiveWeatherProvider(BaseWeatherProvider):
                 forecast_data = future_forecast.result(timeout=self.timeout_seconds + 1.0)
         except Exception as e:
             logger.error(f"InterimLiveWeatherProvider: Network retrieval failed: {e}")
-            if hasattr(e, 'code') and e.code == 429 or '429' in str(e):
-                logger.warning("Live API rate limit exceeded (429), returning fallback mock data.")
+            # Use fallback mock data for rate limits, connection errors, or Windows 10054 issues 
+            # to ensure the local developer experience is not broken.
+            error_str = str(e).lower()
+            if hasattr(e, 'code') and e.code == 429 or '429' in error_str or '10054' in error_str or 'connection' in error_str or 'timeout' in error_str:
+                logger.warning("Live API network error or rate limit exceeded, returning fallback mock data.")
                 # Mock live data
                 marine_data = {
                     "latitude": lat, "longitude": lon,

@@ -9,6 +9,8 @@ scikit-learn
 geopandas
 shapely
 pyproj
+xarray>=2024.1.0
+copernicusmarine>=1.0.0
 groq>=0.12.0
 
 # Testing
