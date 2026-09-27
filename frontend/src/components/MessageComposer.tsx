@@ -173,7 +173,10 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               className="composer-textarea"
               placeholder={isRecording ? "Listening... (Click the red square to stop & transcribe)" : isTranscribing ? "Transcribing..." : "Ask ORCA about marine conditions, sea state, EEZ boundaries…"}
               value={input}
-              onChange={(e) => onChangeInput(e.target.value)}
+              onChange={(e) => {
+                window.sessionStorage.removeItem('last_input_was_voice');
+                onChangeInput(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               disabled={isLoading || isRecording || isTranscribing}
               aria-label="Ask ORCA"

@@ -22,6 +22,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   useEffect(() => {
     if (!isUser && !hasPlayedAudio.current && message.data && message.wasVoice) {
       hasPlayedAudio.current = true;
+      message.wasVoice = false; // Prevent re-playing on component remount
       const lang = window.sessionStorage.getItem('stt_lang') || 'en';
       
       const coord = message.data as CoordinatorResponse;
