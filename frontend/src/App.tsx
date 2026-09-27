@@ -68,7 +68,7 @@ export const App: React.FC = () => {
     source: 'map',
     timestamp: new Date().toISOString(),
   });
-  const [dateStr, setDateStr] = useState<string | null>('2025-10-01');
+  const [dateStr, setDateStr] = useState<string | null>(new Date().toISOString().split('T')[0]);
 
   // Modals & UI States
   const [isLocationOpen, setIsLocationOpen] = useState<boolean>(false);

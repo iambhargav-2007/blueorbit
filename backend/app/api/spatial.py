@@ -10,6 +10,7 @@ Provides dedicated spatial endpoints for map visualization and click-to-analyze:
 
 import json
 import logging
+from datetime import date
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, Query, HTTPException
@@ -262,7 +263,7 @@ def get_grid_layer(
     """
     # Resolve date
     temp_res = _temporal_resolver.resolve(query_text="", explicit_date_str=date)
-    target_date = temp_res.date_str or "2025-10-01"
+    target_date = temp_res.date_str or date.today().isoformat()
     temp_mode = temp_res.mode.value
 
     cells: List[GridCell] = []

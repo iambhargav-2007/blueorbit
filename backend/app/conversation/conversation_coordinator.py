@@ -176,17 +176,35 @@ class ConversationCoordinator:
             latitude = location_context.latitude
             longitude = location_context.longitude
 
-        # Step 1.3 — Natural language place extraction if no explicit coordinates passed
-        if latitude is None and longitude is None:
-            extracted = LocationResolver.extract_location_from_text(query_text)
-            if extracted is not None:
-                latitude = extracted.latitude
-                longitude = extracted.longitude
-                location_context = extracted
-                logger.info(f"Session '{session_id}': extracted location '{extracted.display_name}' ({latitude}, {longitude}) from text")
+        # Step 1.2.5 — Auto-translate non-English queries to English for NLP pipeline
+        query_for_nlp = query_text
+        # Fast heuristic: if query has significant non-ASCII characters, translate it.
+        if len([c for c in query_text if ord(c) > 127]) > max(1, len(query_text) * 0.1):
+            try:
+                llm = getattr(self._coordinator._router, "_llm", None)
+                if llm:
+                    logger.info(f"Session '{session_id}': Translating non-English query for NLP: {query_text}")
+                    res = llm.chat.completions.create(
+                        model="qwen/qwen3.8-27b",
+                        messages=[{"role": "user", "content": f"Translate the following text to English. Return ONLY the English translation, without any quotes or explanations:\n\n{query_text}"}],
+                        temperature=0.0,
+                        max_tokens=100
+                    )
+                    query_for_nlp = res.choices[0].message.content.strip()
+                    logger.info(f"Session '{session_id}': Translated query for NLP: {query_for_nlp}")
+            except Exception as e:
+                logger.error(f"Translation failed: {e}")
+
+        # Step 1.3 — Natural language place extraction (prioritize over frontend default coordinates)
+        extracted = LocationResolver.extract_location_from_text(query_for_nlp)
+        if extracted is not None:
+            latitude = extracted.latitude
+            longitude = extracted.longitude
+            location_context = extracted
+            logger.info(f"Session '{session_id}': extracted location '{extracted.display_name}' ({latitude}, {longitude}) from text")
 
         # Step 1.4 — "Where am I?" handling
-        clean_q = re.sub(r"[^\w\s]", "", query_text.strip().lower()).strip()
+        clean_q = re.sub(r"[^\w\s]", "", query_for_nlp.strip().lower()).strip()
         if clean_q in {
             "where am i", "where am i currently", "where am i right now",
             "what is my location", "what is my current location", "my location", "current location",
@@ -220,12 +238,12 @@ class ConversationCoordinator:
             )
 
         # Step 1.5 — Landlocked inquiry check (e.g. "Rajasthan coast" or inland coordinates)
-        landlocked_msg = LocationResolver.check_landlocked_mention(query_text)
+        landlocked_msg = LocationResolver.check_landlocked_mention(query_for_nlp)
         if not landlocked_msg:
             active_lat = latitude if latitude is not None else (state.latitude if state else None)
             active_lon = longitude if longitude is not None else (state.longitude if state else None)
             if active_lat is not None and active_lon is not None:
-                clean_q_check = query_text.lower()
+                clean_q_check = query_for_nlp.lower()
                 if any(term in clean_q_check for term in ["fish", "coast", "marine", "sea", "ocean", "water", "catch", "weather", "sail", "boat"]):
                     landlocked_msg = LocationResolver.check_inland_coordinates(active_lat, active_lon)
 
@@ -244,9 +262,9 @@ class ConversationCoordinator:
             )
 
         # Step 1.6 — Fast conversational handling (greetings, courtesies, identity)
-        conv_resp = _get_conversational_response(query_text)
+        conv_resp = _get_conversational_response(query_for_nlp)
         if conv_resp is not None:
-            logger.info(f"Session '{session_id}': handled as conversational query ('{query_text}')")
+            logger.info(f"Session '{session_id}': handled as conversational query ('{query_for_nlp}')")
             return CoordinatorResponse(
                 success=True,
                 request={
@@ -261,7 +279,7 @@ class ConversationCoordinator:
             )
 
         # Step 2 — Determine which capabilities and intent the query requires
-        intent, domain, requested_caps = self._coordinator._router.classify_intent(query_text)
+        intent, domain, requested_caps = self._coordinator._router.classify_intent(query_for_nlp)
 
         # Step 2.5 — Fallback for generic conversational / out-of-domain queries
         if intent in {IntentEnum.UNKNOWN.value, "unknown"}:
@@ -274,7 +292,7 @@ class ConversationCoordinator:
                         model=model,
                         messages=[
                             {"role": "system", "content": "You are Blue Orbit (ORCA), a helpful AI marine intelligence assistant for the Indian West Coast. Briefly and politely answer the user's conversational query. If they ask a non-marine question, answer it concisely but remind them your primary expertise is marine ecology, sea state safety, and Indian EEZ compliance."},
-                            {"role": "user", "content": query_text}
+                            {"role": "user", "content": query_for_nlp}
                         ],
                         max_tokens=200,
                         temperature=0.7
@@ -312,7 +330,7 @@ class ConversationCoordinator:
             new_date_str=date_str,
             needs_coords=needs_coords,
             needs_date=needs_date,
-            query_text=query_text,
+            query_text=query_for_nlp,
         )
 
         # Step 4 — Return clarification if required values are missing
@@ -325,7 +343,7 @@ class ConversationCoordinator:
 
         # Step 5 — Call the coordinator with resolved inputs AND classified intent/capabilities
         result: CoordinatorResponse = self._coordinator.process_request(
-            query_text=query_text,
+            query_text=query_for_nlp,
             latitude=resolution.latitude,
             longitude=resolution.longitude,
             date_str=resolution.date_str,
@@ -339,6 +357,10 @@ class ConversationCoordinator:
         # Only update fields that are now definitively known.
         # We never store None over an existing value.
         update_fields: dict = {}
+        
+        # Restore the original query_text for the UI response
+        if result and result.request:
+            result.request["query_text"] = query_text
 
         if resolution.latitude is not None:
             update_fields["latitude"] = resolution.latitude

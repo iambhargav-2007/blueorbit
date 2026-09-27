@@ -91,7 +91,7 @@ COASTAL_PLACES: Dict[str, Dict[str, Any]] = {
         "lat": 21.00,
         "lon": 70.00,
         "display_name": "Gujarat Coastal Waters (Saurashtra)",
-        "aliases": ["gujarat", "gulf of kutch", "gulf of khambhat", "saurashtra coast"]
+        "aliases": ["gujarat", "gujarath", "gulf of kutch", "gulf of khambhat", "saurashtra coast", "gujarath coast"]
     },
     "maharashtra coast": {
         "lat": 18.50,
@@ -146,6 +146,30 @@ LANDLOCKED_AREAS: Dict[str, Dict[str, Any]] = {
     "bihar": {
         "message": "Bihar has no marine coastline.",
         "suggestions": ["Gujarat Coast"]
+    },
+    "vizag": {
+        "message": "Vizag (Visakhapatnam) is on the East Coast of India. ORCA currently only supports the West Coast.",
+        "suggestions": ["Mumbai Coast", "Goa Coastal Zone", "Kochi Offshore"]
+    },
+    "visakhapatnam": {
+        "message": "Visakhapatnam is on the East Coast of India. ORCA currently only supports the West Coast.",
+        "suggestions": ["Mumbai Coast", "Goa Coastal Zone", "Kochi Offshore"]
+    },
+    "chennai": {
+        "message": "Chennai is on the East Coast of India. ORCA currently only supports the West Coast.",
+        "suggestions": ["Mumbai Coast", "Goa Coastal Zone", "Kochi Offshore"]
+    },
+    "kolkata": {
+        "message": "Kolkata is on the East Coast of India. ORCA currently only supports the West Coast.",
+        "suggestions": ["Mumbai Coast", "Goa Coastal Zone", "Kochi Offshore"]
+    },
+    "odisha": {
+        "message": "Odisha is on the East Coast of India. ORCA currently only supports the West Coast.",
+        "suggestions": ["Mumbai Coast", "Goa Coastal Zone", "Kochi Offshore"]
+    },
+    "tamil nadu": {
+        "message": "Tamil Nadu is predominantly East Coast/Southern. ORCA currently only supports the West Coast.",
+        "suggestions": ["Kochi Offshore", "Goa Coastal Zone"]
     }
 }
 

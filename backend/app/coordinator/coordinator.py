@@ -7,6 +7,7 @@ Coast Guards, and Researchers.
 """
 
 import logging
+from datetime import date
 from typing import Optional, Any, List, Dict
 
 from .schemas import (
@@ -257,7 +258,7 @@ class OrcaCoordinator:
                 research_res = self._research_agent.analyze(
                     query=query_text,
                     locations=locs,
-                    start_date=date_str or (temporal_resolution.historical_date if temporal_resolution else None) or "2025-10-01",
+                    start_date=date_str or (temporal_resolution.historical_date if temporal_resolution else None) or date.today().isoformat(),
                     end_date=None,
                     is_comparison=is_comp
                 )
