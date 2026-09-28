@@ -56,16 +56,15 @@ async def transcribe_audio(
         # Whisper-large-v3 natively supports multilingual detection.
         # If language is explicitly provided via dropdown (e.g. 'te'), pass it to Groq.
         transcription_kwargs = {
-            "model": "whisper-large-v3",
+            "model": "whisper-large-v3-turbo",
             "file": file_tuple,
             "response_format": "verbose_json",
-            "temperature": 0.0,
             "prompt": "Mumbai, Gujarat, Goa, Kochi, Mangalore, weather, forecast, sea state, fishing, cyclone, marine conditions."
         }
         
+        # Pass language to prevent Groq Whisper hallucinations in random languages
         if language and language != "auto":
             transcription_kwargs["language"] = language
-            # Remove English prompt for non-English languages to prevent Whisper hallucinations
             if language not in ["en", "english"]:
                 transcription_kwargs.pop("prompt", None)
         

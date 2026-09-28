@@ -29,6 +29,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
@@ -47,11 +48,72 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
 
   const handleRecordToggle = async () => {
     if (isRecording) {
-      if (mediaRecorderRef.current) {
+      if (speechRecognitionRef.current) {
+        speechRecognitionRef.current.stop();
+      } else if (mediaRecorderRef.current) {
         mediaRecorderRef.current.stop();
       }
       setIsRecording(false);
     } else {
+      const selectedLang = window.sessionStorage.getItem('stt_lang') || 'auto';
+      
+      // Attempt to use native Web Speech API first (flawless for regional languages)
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          speechRecognitionRef.current = recognition;
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          
+          let bcp47 = 'en-IN';
+          if (selectedLang === 'hi') bcp47 = 'hi-IN';
+          else if (selectedLang === 'te') bcp47 = 'te-IN';
+          recognition.lang = bcp47;
+
+          let finalTranscript = '';
+
+          recognition.onresult = (event: any) => {
+            let interim = '';
+            let final = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              if (event.results[i].isFinal) {
+                final += event.results[i][0].transcript;
+              } else {
+                interim += event.results[i][0].transcript;
+              }
+            }
+            finalTranscript += final;
+            
+            // Only update input when final is available or when we stop
+            if (final) {
+                window.sessionStorage.setItem('last_input_was_voice', 'true');
+                onChangeInput(input ? `${input} ${finalTranscript.trim()}` : finalTranscript.trim());
+                finalTranscript = '';
+            }
+          };
+
+          recognition.onerror = (event: any) => {
+            console.error('Speech recognition error', event.error);
+            if (event.error !== 'no-speech') {
+              setIsRecording(false);
+            }
+          };
+
+          recognition.onend = () => {
+            setIsRecording(false);
+            speechRecognitionRef.current = null;
+          };
+
+          recognition.start();
+          setIsRecording(true);
+          return; // Skip fallback
+        } catch (err) {
+          console.warn('Web Speech API failed, falling back to MediaRecorder', err);
+        }
+      }
+
+      // Fallback: MediaRecorder + Backend API
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
@@ -69,13 +131,11 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const formData = new FormData();
           formData.append('audio', audioBlob, 'recording.webm');
-          const lang = window.sessionStorage.getItem('stt_lang');
-          if (lang) {
-            formData.append('language', lang);
+          if (selectedLang) {
+            formData.append('language', selectedLang);
           }
           
           try {
-            // Assume backend is on port 8000, can use env if available. Defaulting to relative or localhost.
             const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const res = await fetch(`${backendUrl}/api/v1/voice/transcribe`, {
               method: 'POST',
@@ -85,7 +145,7 @@ export const MessageComposer: React.FC<MessageComposerProps> = ({
               const data = await res.json();
               if (data.transcript) {
                 window.sessionStorage.setItem('last_input_was_voice', 'true');
-                if (data.language && (!lang || lang === 'auto')) {
+                if (data.language && (selectedLang === 'auto' || !selectedLang)) {
                     window.sessionStorage.setItem('stt_lang', data.language);
                 }
                 onChangeInput(input ? `${input} ${data.transcript}` : data.transcript);

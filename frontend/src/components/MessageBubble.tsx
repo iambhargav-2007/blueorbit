@@ -10,6 +10,7 @@ import { AlertStateCard } from './cards/AlertStateCard';
 import { ResearchIntelligenceCard } from './cards/ResearchIntelligenceCard';
 import { FishingDecisionCard } from './cards/FishingDecisionCard';
 import CycloneIntelligenceCard from './CycloneIntelligenceCard';
+import { RoutingResultCard } from './cards/RoutingResultCard';
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -106,6 +107,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const geofencing    = coord?.geofencing;
   const fishingDecision = coord?.fishing_decision;
   const comparison    = coord?.comparison || habitat?.comparison;
+  const routing_navigation = coord?.routing_navigation;
 
   const isFutureUnsupported = habitat?.temporal_mode === 'UNSUPPORTED_FUTURE';
   const isInsufficientData  = habitat && !habitat.success && habitat.error?.includes('unavailable');
@@ -267,6 +269,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               data={coord.cyclone}
             />
           </div>
+        )}
+
+        {/* Routing Navigation */}
+        {routing_navigation?.success && (
+          <RoutingResultCard data={routing_navigation} />
         )}
 
         {/* Future date */}
